@@ -154,7 +154,7 @@
 </html>
 <script>
 
-    var URL_Main = 'https://script.google.com/macros/s/AKfycby_lRqOIwQblW0dPHJb36frI1vPUnRji-XMii95s1dvZ1jW865igDUAJ3q7r4BIajL_/exec';
+    var URL_Main = 'https://script.google.com/macros/s/AKfycbzWqmywshN-hbb2_PD8pJ-XUCy8Vjz-hfPCz7I6elAfyMlwf6GwoXyVWJCxW5k_vyOV/exec';
 
     var Global_Response = null;
 
@@ -217,7 +217,7 @@
                 },
                 success: function (data) {
                     
-                    if(data !== null && data.SubPaymentTypeId !== null && data.SubPaymentTypeId !== undefined && data.SubPaymentTypeId.trim() !== ''){
+                    if(data !== null && data.SubPaymentTypeId !== null && data.SubPaymentTypeId !== undefined && data.SubPaymentTypeId.toString().trim() !== ''){
                         $("#PaymentType").val(Global_Response.PaymentSubType[data.SubPaymentTypeId].PaymentType);
                         FillPaymnetSubType($("#PaymentType").val());
                         $("#PaymentSubType").val(data.SubPaymentTypeId);
