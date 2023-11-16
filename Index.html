@@ -218,7 +218,7 @@
                 success: function (data) {
                     
                     if(data !== null && data.SubPaymentTypeId !== null && data.SubPaymentTypeId !== undefined && data.SubPaymentTypeId.toString().trim() !== ''){
-                        $("#PaymentType").val(Global_Response.PaymentSubType[data.SubPaymentTypeId].PaymentType);
+                        $("#PaymentType").val(Global_Response.PaymentSubType[data.SubPaymentTypeId - 1].PaymentType);
                         FillPaymnetSubType($("#PaymentType").val());
                         $("#PaymentSubType").val(data.SubPaymentTypeId);
                         
