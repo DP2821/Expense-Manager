@@ -225,6 +225,8 @@
                         $("#Category").val(Global_Response.SubCategory[data.SubCategoryTypeId].CategoryId);
                         FillSubCategory($("#Category").val());
                         $("#SubCategory").val(data.SubCategoryTypeId);
+
+                        $("#SaveExpense").focus();
                     }
                     hideLoader();
                 },
