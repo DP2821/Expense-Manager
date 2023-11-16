@@ -222,9 +222,9 @@
                         FillPaymnetSubType($("#PaymentType").val());
                         $("#PaymentSubType").val(data.SubPaymentTypeId);
                         
-                        $("#Category").val(Global_Response.SubCategory[data.SubCategoryTypeId].CategoryId);
+                        $("#Category").val(Global_Response.SubCategory[data.SubCategoryTypeId - 1].CategoryId);
                         FillSubCategory($("#Category").val());
-                        $("#SubCategory").val(data.SubCategoryTypeId);
+                        $("#SubCategory").val(data.SubCategoryTypeId - 1);
 
                         $("#SaveExpense").focus();
                     }
