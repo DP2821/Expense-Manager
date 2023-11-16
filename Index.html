@@ -224,7 +224,7 @@
                         
                         $("#Category").val(Global_Response.SubCategory[data.SubCategoryTypeId - 1].CategoryId);
                         FillSubCategory($("#Category").val());
-                        $("#SubCategory").val(data.SubCategoryTypeId - 1);
+                        $("#SubCategory").val(data.SubCategoryTypeId);
 
                         $("#SaveExpense").focus();
                     }
