@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Balance Management - Expense Manager</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <!-- jQuery first, then Toastr -->
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js" integrity="sha256-2Pmvv0kuTBOenSvLm6bvfBSSHrUJ+3A7x6P5Ebd07/g=" crossorigin="anonymous"></script>
+    <!-- Toastr CSS and JS for toast notifications -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+    <style>
+        /* Improved loader styles */
+        .loader-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+
+        .loader {
+            position: relative;
+            top: calc(50% - 55px);
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #007bff;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Toastr customization */
+        .toast-success {
+            background-color: #28a745 !important;
+        }
+        
+        .toast-error {
+            background-color: #dc3545 !important;
+        }
+        
+        .toast-warning {
+            background-color: #ffc107 !important;
+        }
+        
+        .toast-info {
+            background-color: #17a2b8 !important;
+        }
+    </style>
+</head>
+<body>
+    <!-- Bootstrap Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="Dashboard.html">Expense Manager</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="btn btn-outline-light mx-1" href="Dashboard.html">
+                            <span class="material-icons align-middle">dashboard</span> Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="btn btn-primary mx-1" href="Index.html">
+                            <span class="material-icons align-middle">add_circle</span> Add Expense
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="btn btn-success mx-1" href="Index.html#add-income-tab">
+                            <span class="material-icons align-middle">attach_money</span> Add Income
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="btn btn-warning mx-1" href="Chart.html">
+                            <span class="material-icons align-middle">insert_chart</span> Charts
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="btn btn-info mx-1" href="Balance.html">
+                            <span class="material-icons align-middle">account_balance</span> Balance
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container my-5">
+        <!-- Header -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <h2 class="text-center">
+                    <span class="material-icons align-middle">account_balance</span>
+                    Balance Management
+                </h2>
+                <p class="text-center text-muted">Manage your account balances and credit limits</p>
+            </div>
+        </div>
+
+        <!-- Summary Cards -->
+        <div class="row g-4 mb-4">
+            <div class="col-md-4">
+                <div class="card text-center shadow-sm">
+                    <div class="card-body">
+                        <span class="material-icons" style="font-size:2.5rem;color:#1976d2;">account_balance</span>
+                        <h5 class="card-title mt-2">Total Bank Balance</h5>
+                        <h3 class="fw-bold" id="total-bank-balance">₹ 0.00</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card text-center shadow-sm">
+                    <div class="card-body">
+                        <span class="material-icons" style="font-size:2.5rem;color:#ff9800;">credit_card</span>
+                        <h5 class="card-title mt-2">Total Credit Limit</h5>
+                        <h3 class="fw-bold" id="total-credit-limit">₹ 0.00</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card text-center shadow-sm">
+                    <div class="card-body">
+                        <span class="material-icons" style="font-size:2.5rem;color:#388e3c;">account_balance_wallet</span>
+                        <h5 class="card-title mt-2">Net Available</h5>
+                        <h3 class="fw-bold" id="net-available">₹ 0.00</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add/Edit Balance Form -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-primary text-white">
+                        <span class="material-icons align-middle">add_circle</span> Add/Edit Account Balance
+                    </div>
+                    <div class="card-body">
+                        <form id="balance-form">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="accountSelect" class="form-label">Select Account</label>
+                                        <select class="form-select" id="accountSelect" required>
+                                            <option value="" disabled selected>Choose an account...</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="balanceAmount" class="form-label">Balance Amount</label>
+                                        <input type="number" class="form-control" id="balanceAmount" placeholder="Enter balance amount" required>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="creditLimit" class="form-label">Credit Limit (for credit cards)</label>
+                                        <input type="number" class="form-control" id="creditLimit" placeholder="Enter credit limit (optional)">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="lastUpdated" class="form-label">Last Updated</label>
+                                        <input type="date" class="form-control" id="lastUpdated" required>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="d-flex gap-2">
+                                <button type="submit" class="btn btn-primary">
+                                    <span class="material-icons align-middle">save</span> Save Balance
+                                </button>
+                                <button type="button" class="btn btn-secondary" id="resetForm">
+                                    <span class="material-icons align-middle">refresh</span> Reset
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Balance Table -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card shadow-sm">
+                    <div class="card-header bg-secondary text-white">
+                        <span class="material-icons align-middle">list</span> Account Balances
+                    </div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Account Name</th>
+                                        <th>Type</th>
+                                        <th>Balance</th>
+                                        <th>Credit Limit</th>
+                                        <th>Available</th>
+                                        <th>Last Updated</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="balance-table">
+                                    <tr>
+                                        <td colspan="7" class="text-center text-muted">Loading balances...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Global Loader -->
+    <div id="globalLoader" class="loader-overlay">
+        <div class="loader"></div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+    
+    <script>
+    // Configure Toastr
+    toastr.options = {
+        "closeButton": true,
+        "debug": false,
+        "newestOnTop": true,
+        "progressBar": true,
+        "positionClass": "toast-top-right",
+        "preventDuplicates": false,
+        "onclick": null,
+        "showDuration": "300",
+        "hideDuration": "1000",
+        "timeOut": "5000",
+        "extendedTimeOut": "1000",
+        "showEasing": "swing",
+        "hideEasing": "linear",
+        "showMethod": "fadeIn",
+        "hideMethod": "fadeOut"
+    };
+    </script>
+    
+    <script src="scripts/balance.js"></script>
+</body>
+</html> 

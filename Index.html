@@ -11,8 +11,12 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"
         integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM"
         crossorigin="anonymous"></script>
+    <!-- Toastr CSS and JS for toast notifications -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
     <title>Expense Manager</title>
-
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <style>
         select {
             width: 250px;
@@ -49,13 +53,14 @@
             display: block;
         }
 
+        /* Improved loader styles */
         .loader-overlay {
             position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.6);
+            background: rgba(0, 0, 0, 0.7);
             display: none;
             align-items: center;
             justify-content: center;
@@ -63,25 +68,37 @@
         }
 
         .loader {
-            position: absolute;
+            position: relative;
             top: calc(50% - 55px);
-            left: calc(50% - 55px);
-            border: 5px solid #f3f3f3;
-            border-top: 5px solid #212529;
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #007bff;
             border-radius: 50%;
             width: 50px;
             height: 50px;
-            animation: spin 2s linear infinite;
+            animation: spin 1s linear infinite;
+            margin: auto;
         }
 
         @keyframes spin {
-            0% {
-                transform: rotate(0deg);
-            }
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
 
-            100% {
-                transform: rotate(360deg);
-            }
+        /* Toastr customization */
+        .toast-success {
+            background-color: #28a745 !important;
+        }
+        
+        .toast-error {
+            background-color: #dc3545 !important;
+        }
+        
+        .toast-warning {
+            background-color: #ffc107 !important;
+        }
+        
+        .toast-info {
+            background-color: #17a2b8 !important;
         }
     </style>
 </head>
@@ -89,270 +106,201 @@
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container">
-            <a class="navbar-brand" href="#">Expense Manager</a>
+            <a class="navbar-brand" href="Dashboard.html">Expense Manager</a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
                 aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ml-auto">
+                <ul class="navbar-nav ms-auto">
                     <li class="nav-item">
-                        <a class="nav-link" href="Index.html">Add Expense</a>
+                        <a class="btn btn-outline-light mx-1" href="Dashboard.html">
+                            <span class="material-icons align-middle">dashboard</span> Dashboard
+                        </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="Chart.html">Chart</a>
+                        <a class="btn btn-primary mx-1" href="Index.html">
+                            <span class="material-icons align-middle">add_circle</span> Add Expense
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="btn btn-success mx-1" href="Index.html#add-income-tab">
+                            <span class="material-icons align-middle">attach_money</span> Add Income
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="btn btn-warning mx-1" href="Chart.html">
+                            <span class="material-icons align-middle">insert_chart</span> Charts
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="btn btn-info mx-1" href="Balance.html">
+                            <span class="material-icons align-middle">account_balance</span> Balance
+                        </a>
                     </li>
                 </ul>
             </div>
         </div>
     </nav>
-
-    <div class="container">
-        <div id="popup" class="popup"></div>
-        <div id="loader" class="loader-overlay">
-            <div class="loader"></div>
-        </div>
-        <div class="container">
-            <div class="mx-auto" style="max-width: 500px;">
-                <div class="card my-4">
-                    <div class="card-header text-center">
-                        <h5 class="card-title">Expense Details</h5>
+    <div class="container mt-4">
+        <ul class="nav nav-tabs" id="expenseIncomeTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="add-expense-tab" data-bs-toggle="tab" data-bs-target="#add-expense" type="button" role="tab" aria-controls="add-expense" aria-selected="true">Add Expense</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="add-income-tab" data-bs-toggle="tab" data-bs-target="#add-income" type="button" role="tab" aria-controls="add-income" aria-selected="false">Add Income</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="borrow-lent-tab" data-bs-toggle="tab" data-bs-target="#borrow-lent" type="button" role="tab" aria-controls="borrow-lent" aria-selected="false">Borrow/Lent</button>
+            </li>
+        </ul>
+        <div class="tab-content" id="expenseIncomeTabsContent">
+            <div class="tab-pane fade show active" id="add-expense" role="tabpanel" aria-labelledby="add-expense-tab">
+                <div class="container">
+                    <div class="mx-auto" style="max-width: 500px;">
+                        <div class="card my-4">
+                            <div class="card-header text-center">
+                                <h5 class="card-title">Expense Details</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <input class="form-control" type="number" name="amount" id="Amount" placeholder="Amount"
+                                        required tabindex="1">
+                                </div>
+                                <div class="mb-3">
+                                    <input class="form-control" type="text" name="description" id="Description"
+                                        placeholder="Description" required tabindex="2">
+                                </div>
+                                <div class="mb-3">
+                                    <select class="form-select" id="PaymentType" required tabindex="3"></select>
+                                </div>
+                                <div class="mb-3">
+                                    <select class="form-select" id="PaymentSubType" required tabindex="4"></select>
+                                </div>
+                                <div class="mb-3">
+                                    <select class="form-select" id="Category" required tabindex="5"></select>
+                                </div>
+                                <div class="mb-3">
+                                    <select class="form-select" id="SubCategory" required tabindex="6"></select>
+                                </div>
+                                <div class="mb-3">
+                                    <input class="form-control" type="date" name="payment-date" id="PaymentDate" required
+                                        tabindex="8">
+                                </div>
+                                <button class="btn btn-dark w-100" type="submit" id="SaveExpense" tabindex="7">Save</button>
+                            </div>
+                        </div>
                     </div>
-                    <div class="card-body">
-                        <div class="mb-3">
-                            <input class="form-control" type="number" name="amount" id="Amount" placeholder="Amount"
-                                required tabindex="1">
+                </div>
+            </div>
+            <div class="tab-pane fade" id="add-income" role="tabpanel" aria-labelledby="add-income-tab">
+                <div class="mx-auto" style="max-width: 500px;">
+                    <div class="card my-4">
+                        <div class="card-header text-center">
+                            <h5 class="card-title">Add Income</h5>
                         </div>
-                        <div class="mb-3">
-                            <input class="form-control" type="text" name="description" id="Description"
-                                placeholder="Description" required tabindex="2">
+                        <div class="card-body">
+                            <form id="income-form">
+                                <div class="mb-3">
+                                    <input class="form-control" type="number" name="income-amount" id="IncomeAmount" placeholder="Amount" required tabindex="1">
+                                </div>
+                                <div class="mb-3">
+                                    <input class="form-control" type="text" name="income-description" id="IncomeDescription" placeholder="Description" required tabindex="2">
+                                </div>
+                                <div class="mb-3">
+                                    <select class="form-select" id="IncomeCategory" required tabindex="3">
+                                        <option value="" disabled selected>Select Income Source</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <input class="form-control" type="date" name="income-date" id="IncomeDate" required tabindex="4">
+                                </div>
+                                <button class="btn btn-success w-100" type="submit" id="SaveIncome" tabindex="5">Save</button>
+                            </form>
                         </div>
-                        <div class="mb-3">
-                            <select class="form-select" id="PaymentType" required tabindex="3"></select>
+                    </div>
+                </div>
+            </div>
+            <div class="tab-pane fade" id="borrow-lent" role="tabpanel" aria-labelledby="borrow-lent-tab">
+                <div class="mx-auto" style="max-width: 500px;">
+                    <div class="card my-4">
+                        <div class="card-header text-center">
+                            <h5 class="card-title">Borrow / Lent</h5>
                         </div>
-                        <div class="mb-3">
-                            <select class="form-select" id="PaymentSubType" required tabindex="4"></select>
+                        <div class="card-body">
+                            <form id="borrow-lent-form">
+                                <div class="mb-3">
+                                    <label for="BorrowLentType" class="form-label">Type</label>
+                                    <select class="form-select" id="BorrowLentType" required tabindex="1">
+                                        <option value="" disabled selected>Select Type</option>
+                                        <option value="Borrow">Borrow</option>
+                                        <option value="Lent">Lent</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <input class="form-control" type="text" name="person" id="BorrowLentPerson" placeholder="Person" required tabindex="2">
+                                </div>
+                                <div class="mb-3">
+                                    <input class="form-control" type="number" name="amount" id="BorrowLentAmount" placeholder="Amount" required tabindex="3">
+                                </div>
+                                <div class="mb-3">
+                                    <input class="form-control" type="text" name="description" id="BorrowLentDescription" placeholder="Description" required tabindex="4">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="BorrowLentDate" class="form-label">Borrow/Lent Date</label>
+                                    <input class="form-control" type="date" name="date" id="BorrowLentDate" required tabindex="5">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="BorrowLentDueDate" class="form-label">Borrow/Lent Due Date</label>
+                                    <input class="form-control" type="date" name="due-date" id="BorrowLentDueDate" placeholder="Due Date" required tabindex="6">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="BorrowLentStatus" class="form-label">Status</label>
+                                    <select class="form-select" id="BorrowLentStatus" required tabindex="7">
+                                        <option value="Open" selected>Open</option>
+                                        <option value="Closed">Closed</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="BorrowLentReturnedDate" class="form-label">Borrow/Lent Returned Date</label>
+                                    <input class="form-control" type="date" name="returned-date" id="BorrowLentReturnedDate" placeholder="Returned Date (if closed)" tabindex="8">
+                                </div>
+                                <button class="btn btn-info w-100" type="submit" id="SaveBorrowLent" tabindex="9">Save</button>
+                            </form>
                         </div>
-                        <div class="mb-3">
-                            <select class="form-select" id="Category" required tabindex="5"></select>
-                        </div>
-                        <div class="mb-3">
-                            <select class="form-select" id="SubCategory" required tabindex="6"></select>
-                        </div>
-                        <div class="mb-3">
-                            <input class="form-control" type="date" name="payment-date" id="PaymentDate" required
-                                tabindex="8">
-                        </div>
-                        <button class="btn btn-dark w-100" type="submit" id="SaveExpense" tabindex="7">Save</button>
                     </div>
                 </div>
             </div>
         </div>
+    </div>
+
+    <!-- Global Loader -->
+    <div id="globalLoader" class="loader-overlay">
+        <div class="loader"></div>
+    </div>
 
 </body>
 
 </html>
+
 <script>
-
-    var URL_Main = 'https://script.google.com/macros/s/AKfycbzWqmywshN-hbb2_PD8pJ-XUCy8Vjz-hfPCz7I6elAfyMlwf6GwoXyVWJCxW5k_vyOV/exec';
-
-    var Global_Response = null;
-
-    $(document).ready(function () {
-        showLoader()
-        GetAllDropDownData()
-
-        $("#PaymentType").change(function () {
-            FillPaymnetSubType($(this).val());
-        });
-
-        $("#Category").change(function () {
-            FillSubCategory($(this).val());
-        });
-
-        $("#SaveExpense").click(function () {
-            showLoader();
-            InsertExpense()
-        });
-
-        document.getElementById('PaymentDate').value = getCurrentDate();
-    });
-
-    function GetAllDropDownData() {
-        $.ajax({
-            url: URL_Main,
-            type: "GET",
-            success: function (response) {
-                Global_Response = response;
-
-                FillDropDown("PaymentType", response.PaymentType);
-                FillPaymnetSubType($("#PaymentType").val());
-
-                FillDropDown("Category", response.Category);
-                FillSubCategory($("#Category").val());
-
-                hideLoader();
-            },
-            error: function (xhr, status, error) {
-                console.error("AJAX request error", error);
-                // Handle the error here
-                hideLoader();
-            }
-        });
-    }
-
-    $("#Description").blur(function () {
-        var description = $(this).val();
-        if(description !== null && description !== undefined && description.trim() !== ''){
-            showLoader();
-            $.ajax({
-                url: URL_Main,
-                type: 'GET',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded'
-                },
-                data:
-                {
-                    description: description
-                },
-                success: function (data) {
-                    
-                    if(data !== null && data.SubPaymentTypeId !== null && data.SubPaymentTypeId !== undefined && data.SubPaymentTypeId.toString().trim() !== ''){
-                        $("#PaymentType").val(Global_Response.PaymentSubType[data.SubPaymentTypeId - 1].PaymentType);
-                        FillPaymnetSubType($("#PaymentType").val());
-                        $("#PaymentSubType").val(data.SubPaymentTypeId);
-                        
-                        $("#Category").val(Global_Response.SubCategory[data.SubCategoryTypeId - 1].CategoryId);
-                        FillSubCategory($("#Category").val());
-                        $("#SubCategory").val(data.SubCategoryTypeId);
-
-                        $("#SaveExpense").focus();
-                    }
-                    hideLoader();
-                },
-                error: function (xhr, status, error) {
-                    showPopup('Error: ' + error.msg, 'red');
-                    hideLoader();
-                }
-            });
-        }
-    });
-
-    function FillPaymnetSubType(id) {
-        let paymentSubTypeRes = Object.fromEntries(Object.entries(Global_Response.PaymentSubType).filter(([k, v]) => v.PaymentType == id));
-        FillDropDown("PaymentSubType", paymentSubTypeRes);
-    }
-
-    function FillSubCategory(id) {
-        let subCategoryRes = Object.fromEntries(Object.entries(Global_Response.SubCategory).filter(([k, v]) => v.CategoryId == id));
-        FillDropDown("SubCategory", subCategoryRes);
-    }
-
-    function FillDropDown(id, data, value, hasSelect, defaultText) {
-        var options = '';
-        if (hasSelect == true) {
-            if (defaultText == undefined || defaultText == null)
-                defaultText = 'Select';
-
-            options = "<option value=''>" + defaultText + "</option>";
-        }
-
-        $.each(data, function (i, val) {
-            options += '<option value = "' + val.Value + '" >' + val.Text + '</option>'
-        });
-
-        $("#" + id).html(options);
-
-        if (value && value != '' && value != 0) {
-            $("#" + id).val(value);
-        }
-
-        if ($('#' + id).attr('selval') && $('#' + id).attr('selval') > 0) {
-            $("#" + id).val($('#' + id).attr('selval'));
-        }
-
-        if ($("#" + id).selectpicker != undefined) {
-            $("#" + id).selectpicker('refresh');
-        }
-    }
-
-    function InsertExpense() {
-
-        var amount = $("#Amount").val();
-        var paymentType = $("#PaymentType").val();
-        var paymentSubType = $("#PaymentSubType").val();
-        var category = $("#Category").val();
-        var subCategory = $("#SubCategory").val();
-        var description = $("#Description").val();
-        var paymentDate = $("#PaymentDate").val();
-
-        debugger;
-        if (amount > 0 && paymentType > 0 && paymentSubType > 0 && category > 0 && subCategory > 0 && description != null && description != '') {
-
-            $.ajax({
-                url: URL_Main,
-                type: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded'
-                },
-                data:
-                {
-                    amount: amount,
-                    paymentType: paymentType,
-                    subPaymentTypeId: paymentSubType,
-                    category: category,
-                    subCategoryTypeId: subCategory,
-                    description: description,
-                    paymentDate: paymentDate
-                },
-                success: function (data) {
-                    // Show success popup
-                    showPopup('Data Inserted Successfully', 'green');
-                    // Clear input fields
-                    $("#Amount").val('');
-                    $("#Description").val('');
-                    hideLoader();
-                },
-                error: function (xhr, status, error) {
-                    showPopup('Error: ' + error.msg, 'red');
-                    hideLoader();
-                }
-            });
-        }
-        else {
-            alert("Please Fill All details...");
-            hideLoader()
-        }
-
-        $("#Amount").focus();
-    }
-    $("#Amount").focus();
-
-    function getCurrentDate() {
-        const today = new Date();
-        const year = today.getFullYear();
-        const month = String(today.getMonth() + 1).padStart(2, '0');
-        const day = String(today.getDate()).padStart(2, '0');
-        return `${year}-${month}-${day}`;
-    }
-
-    function showPopup(message, bgColor) {
-        var popup = $("#popup");
-        popup.text(message);
-        popup.css('background-color', bgColor);
-        popup.addClass('active');
-        setTimeout(function () {
-            popup.removeClass('active');
-            popup.text('');
-        }, 6000); // Display for 4 seconds
-    }
-
-    function showLoader() {
-        $("#loader").fadeIn();
-    }
-
-    function hideLoader() {
-        $("#loader").fadeOut();
-    }
-
+// Configure Toastr
+toastr.options = {
+    "closeButton": true,
+    "debug": false,
+    "newestOnTop": true,
+    "progressBar": true,
+    "positionClass": "toast-top-right",
+    "preventDuplicates": false,
+    "onclick": null,
+    "showDuration": "300",
+    "hideDuration": "1000",
+    "timeOut": "5000",
+    "extendedTimeOut": "1000",
+    "showEasing": "swing",
+    "hideEasing": "linear",
+    "showMethod": "fadeIn",
+    "hideMethod": "fadeOut"
+};
 </script>
+<script src="scripts/index.js"></script>
