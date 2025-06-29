@@ -213,9 +213,14 @@
                                     </select>
                                 </div>
                                 <div class="mb-3">
-                                    <input class="form-control" type="date" name="income-date" id="IncomeDate" required tabindex="4">
+                                    <select class="form-select" id="IncomeAccount" required tabindex="4">
+                                        <option value="" disabled selected>Select Account</option>
+                                    </select>
                                 </div>
-                                <button class="btn btn-success w-100" type="submit" id="SaveIncome" tabindex="5">Save</button>
+                                <div class="mb-3">
+                                    <input class="form-control" type="date" name="income-date" id="IncomeDate" required tabindex="5">
+                                </div>
+                                <button class="btn btn-success w-100" type="submit" id="SaveIncome" tabindex="6">Save</button>
                             </form>
                         </div>
                     </div>

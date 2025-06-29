@@ -31,6 +31,12 @@ function doPost(data) {
       getCurrentDate()
     ];
     sheet.appendRow(newRow);
+    
+    // Update balance automatically if requested and account is specified
+    if (data.parameter.updateBalance === 'true' && data.parameter.accountId) {
+      updateAccountBalanceForIncome(data.parameter.accountId, data.parameter.amount);
+    }
+    
     return ContentService.createTextOutput(JSON.stringify({ 'msg': 'Income record inserted successfully.' }))
       .setMimeType(ContentService.MimeType.JSON);
   } else if (data.parameter.type === 'balance') {
@@ -59,12 +65,19 @@ function doPost(data) {
     return ContentService.createTextOutput(JSON.stringify({ 'msg': 'Balance saved successfully.' }))
       .setMimeType(ContentService.MimeType.JSON);
   }
+  
+  // Handle expense insertion with automatic balance update
   var id = getNextId();
   var doc = SpreadsheetApp.getActiveSpreadsheet();
   var sheet = doc.getSheetByName('Expenses'); // Replace 'YourSheetName' with the actual sheet name
 
   var newRow = [id, data.parameter.amount, data.parameter.subPaymentTypeId, data.parameter.subCategoryTypeId, data.parameter.description, data.parameter.paymentDate, getCurrentDate()];
   sheet.appendRow(newRow);
+
+  // Update balance automatically if requested
+  if (data.parameter.updateBalance === 'true') {
+    updateAccountBalance(data.parameter.subPaymentTypeId, data.parameter.amount);
+  }
 
   return ContentService.createTextOutput(JSON.stringify({ 'msg': 'Data inserted successfully.' }))
     .setMimeType(ContentService.MimeType.JSON);
@@ -116,6 +129,67 @@ function findBalanceRow(accountId) {
     }
   }
   return null; // Not found
+}
+
+function updateAccountBalance(accountId, expenseAmount) {
+  var doc = SpreadsheetApp.getActiveSpreadsheet();
+  var balanceSheet = doc.getSheetByName('Balance');
+  var paymentSubTypeSheet = doc.getSheetByName('PaymentSubtype');
+  
+  // Get account type information
+  var paymentSubTypeData = paymentSubTypeSheet.getDataRange().getValues();
+  var accountType = null;
+  
+  // Find the account type (bank account vs credit card)
+  for (var i = 1; i < paymentSubTypeData.length; i++) {
+    if (paymentSubTypeData[i][0] == accountId) { // Assuming Value is in first column
+      accountType = paymentSubTypeData[i][1]; // Assuming PaymentType is in second column
+      break;
+    }
+  }
+  
+  // Find existing balance row
+  var existingRow = findBalanceRow(accountId);
+  
+  if (existingRow) {
+    // Update existing balance
+    var currentBalance = parseFloat(balanceSheet.getRange(existingRow, 2).getValue() || 0);
+    var creditLimit = parseFloat(balanceSheet.getRange(existingRow, 3).getValue() || 0);
+    
+    if (accountType == 3) { // Credit card (assuming 3 is credit card type)
+      // For credit cards: increase the used amount (balance field stores used amount)
+      var newUsedAmount = currentBalance + parseFloat(expenseAmount);
+      balanceSheet.getRange(existingRow, 2).setValue(newUsedAmount);
+    } else {
+      // For bank accounts: decrease the balance
+      var newBalance = currentBalance - parseFloat(expenseAmount);
+      balanceSheet.getRange(existingRow, 2).setValue(newBalance);
+    }
+    
+    // Update last updated date
+    balanceSheet.getRange(existingRow, 4).setValue(getCurrentDate());
+  } else {
+    // Create new balance entry if it doesn't exist
+    var newBalance = 0;
+    var creditLimit = 0;
+    
+    if (accountType == 3) { // Credit card
+      // For credit cards: set initial used amount
+      newBalance = parseFloat(expenseAmount);
+      // You might want to set a default credit limit or leave it 0
+    } else {
+      // For bank accounts: set negative balance (assuming this is the first transaction)
+      newBalance = -parseFloat(expenseAmount);
+    }
+    
+    var newRow = [
+      accountId,
+      newBalance,
+      creditLimit,
+      getCurrentDate()
+    ];
+    balanceSheet.appendRow(newRow);
+  }
 }
 
 function getCurrentDate() {
@@ -579,6 +653,56 @@ function getAnalyticsData(startDate, endDate) {
     avgDailySpending: avgDailySpending,
     topCategories: categoryChartData.slice(0, 5) // Top 5 categories
   };
+}
+
+function updateAccountBalanceForIncome(accountId, incomeAmount) {
+  var doc = SpreadsheetApp.getActiveSpreadsheet();
+  var balanceSheet = doc.getSheetByName('Balance');
+  var paymentSubTypeSheet = doc.getSheetByName('PaymentSubtype');
+  
+  // Get account type information
+  var paymentSubTypeData = paymentSubTypeSheet.getDataRange().getValues();
+  var accountType = null;
+  
+  // Find the account type (bank account vs credit card)
+  for (var i = 1; i < paymentSubTypeData.length; i++) {
+    if (paymentSubTypeData[i][0] == accountId) { // Assuming Value is in first column
+      accountType = paymentSubTypeData[i][1]; // Assuming PaymentType is in second column
+      break;
+    }
+  }
+  
+  // Only update bank accounts (not credit cards)
+  if (accountType == 3) { // Credit card
+    return; // Don't update credit card balances for income
+  }
+  
+  // Find existing balance row
+  var existingRow = findBalanceRow(accountId);
+  
+  if (existingRow) {
+    // Update existing balance
+    var currentBalance = parseFloat(balanceSheet.getRange(existingRow, 2).getValue() || 0);
+    
+    // For bank accounts: increase the balance
+    var newBalance = currentBalance + parseFloat(incomeAmount);
+    balanceSheet.getRange(existingRow, 2).setValue(newBalance);
+    
+    // Update last updated date
+    balanceSheet.getRange(existingRow, 4).setValue(getCurrentDate());
+  } else {
+    // Create new balance entry if it doesn't exist
+    var newBalance = parseFloat(incomeAmount);
+    var creditLimit = 0;
+    
+    var newRow = [
+      accountId,
+      newBalance,
+      creditLimit,
+      getCurrentDate()
+    ];
+    balanceSheet.appendRow(newRow);
+  }
 }
 
 

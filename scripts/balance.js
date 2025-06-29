@@ -1,4 +1,4 @@
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzuviq5r3Nrt8wYBtvJneO25T0cy9Qy064rcnNpR3qzUKvHHfOG5CQwwdi31r6n8ulD/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw0v_7gv8z3uBv4nSqxi5Xbc7lMQkh_plsgVay1FWmv-ljVF8gJJQDtD8BAi7BmQv6C/exec';
 
 let Global_Response = null;
 let selectedAccountId = null;
@@ -92,6 +92,7 @@ function loadBalanceTable() {
     
     if (Global_Response && Global_Response.Balance && Global_Response.Balance.length > 0) {
         Global_Response.Balance.forEach(function(balance) {
+            console.log(balance);
             const account = Global_Response.PaymentSubType.find(a => a.Value == balance.AccountId);
             const paymentType = Global_Response.PaymentType.find(p => p.Value == account.PaymentType);
             
@@ -99,11 +100,19 @@ function loadBalanceTable() {
             const isCreditCard = account.PaymentType == 3; // Assuming 3 is credit card type
             const available = isCreditCard ? (balance.CreditLimit - balance.Balance) : balance.Balance;
             
+            // Format balance display based on account type
+            let balanceDisplay = '';
+            if (isCreditCard) {
+                balanceDisplay = `Used: ₹ ${Number(balance.Balance || 0).toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+            } else {
+                balanceDisplay = `₹ ${Number(balance.Balance || 0).toLocaleString(undefined, {minimumFractionDigits: 2})}`;
+            }
+            
             const tr = `
                 <tr>
                     <td>${account ? account.Text : 'Unknown'}</td>
                     <td><span class="badge bg-${isCreditCard ? 'warning' : 'primary'}">${accountType}</span></td>
-                    <td>₹ ${Number(balance.Balance || 0).toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
+                    <td>${balanceDisplay}</td>
                     <td>${isCreditCard ? '₹ ' + Number(balance.CreditLimit || 0).toLocaleString(undefined, {minimumFractionDigits: 2}) : '-'}</td>
                     <td class="${available < 0 ? 'text-danger' : 'text-success'}">₹ ${Number(available).toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
                     <td>${balance.LastUpdated || 'Not set'}</td>
@@ -245,4 +254,4 @@ function showLoader() {
 
 function hideLoader() {
     $("#globalLoader").fadeOut();
-} 
+}

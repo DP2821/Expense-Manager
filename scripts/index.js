@@ -1,4 +1,4 @@
-var URL_Main = 'https://script.google.com/macros/s/AKfycbzuviq5r3Nrt8wYBtvJneO25T0cy9Qy064rcnNpR3qzUKvHHfOG5CQwwdi31r6n8ulD/exec';
+var URL_Main = 'https://script.google.com/macros/s/AKfycbw0v_7gv8z3uBv4nSqxi5Xbc7lMQkh_plsgVay1FWmv-ljVF8gJJQDtD8BAi7BmQv6C/exec';
 
     var Global_Response = null;
 
@@ -44,6 +44,9 @@ var URL_Main = 'https://script.google.com/macros/s/AKfycbzuviq5r3Nrt8wYBtvJneO25
                 FillSubCategory($("#Category").val());
 
                 FillDropDown("IncomeCategory", response.IncomeCategory, null, true, "Select Income Source");
+
+                // Populate income account dropdown with bank accounts only
+                FillIncomeAccountDropdown(response.PaymentSubType, response.PaymentType);
 
                 hideLoader();
                 if (typeof toastr !== 'undefined') {
@@ -120,6 +123,22 @@ var URL_Main = 'https://script.google.com/macros/s/AKfycbzuviq5r3Nrt8wYBtvJneO25
         FillDropDown("SubCategory", subCategoryRes);
     }
 
+    function FillIncomeAccountDropdown(paymentSubTypes, paymentTypes) {
+        var options = '<option value="" disabled selected>Select Account</option>';
+        
+        // Filter for bank accounts only (not credit cards)
+        var bankAccounts = paymentSubTypes.filter(function(account) {
+            // Assuming credit card type is 3, adjust if different
+            return account.PaymentType != 3;
+        });
+        
+        $.each(bankAccounts, function (i, val) {
+            options += '<option value = "' + val.Value + '" >' + val.Text + '</option>';
+        });
+        
+        $("#IncomeAccount").html(options);
+    }
+
     function FillDropDown(id, data, value, hasSelect, defaultText) {
         var options = '';
         if (hasSelect == true) {
@@ -174,14 +193,15 @@ var URL_Main = 'https://script.google.com/macros/s/AKfycbzuviq5r3Nrt8wYBtvJneO25
                     category: category,
                     subCategoryTypeId: subCategory,
                     description: description,
-                    paymentDate: paymentDate
+                    paymentDate: paymentDate,
+                    updateBalance: 'true' // Flag to indicate balance should be updated
                 },
                 success: function (data) {
                     // Show success toast
                     if (typeof toastr !== 'undefined') {
-                        toastr.success('Expense data inserted successfully!');
+                        toastr.success('Expense data inserted successfully! Account balance updated.');
                     } else {
-                        alert('Expense data inserted successfully!');
+                        alert('Expense data inserted successfully! Account balance updated.');
                     }
                     // Clear input fields
                     $("#Amount").val('');
@@ -215,6 +235,7 @@ var URL_Main = 'https://script.google.com/macros/s/AKfycbzuviq5r3Nrt8wYBtvJneO25
         var description = $("#IncomeDescription").val();
         var incomeCategory = $("#IncomeCategory").val();
         var incomeDate = $("#IncomeDate").val();
+        var accountId = $("#IncomeAccount").val();
 
         if (amount > 0 && incomeCategory > 0 && description != null && description != '' && incomeDate != null && incomeDate != '') {
             $.ajax({
@@ -228,19 +249,20 @@ var URL_Main = 'https://script.google.com/macros/s/AKfycbzuviq5r3Nrt8wYBtvJneO25
                     amount: amount,
                     description: description,
                     incomeSource: incomeCategory,
-                    date: incomeDate
+                    date: incomeDate,
+                    accountId: accountId,
+                    updateBalance: 'true'
                 },
                 success: function (data) {
-                    // Show success toast
                     if (typeof toastr !== 'undefined') {
-                        toastr.success('Income data inserted successfully!');
+                        toastr.success('Income data inserted successfully! Account balance updated.');
                     } else {
-                        alert('Income data inserted successfully!');
+                        alert('Income data inserted successfully! Account balance updated.');
                     }
-                    // Clear input fields
                     $("#IncomeAmount").val('');
                     $("#IncomeDescription").val('');
                     $("#IncomeCategory").val('');
+                    $("#IncomeAccount").val('');
                     hideLoader();
                 },
                 error: function (xhr, status, error) {

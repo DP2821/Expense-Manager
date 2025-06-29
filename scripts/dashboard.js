@@ -1,4 +1,4 @@
-const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzuviq5r3Nrt8wYBtvJneO25T0cy9Qy064rcnNpR3qzUKvHHfOG5CQwwdi31r6n8ulD/exec';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw0v_7gv8z3uBv4nSqxi5Xbc7lMQkh_plsgVay1FWmv-ljVF8gJJQDtD8BAi7BmQv6C/exec';
 
 let categoryChart = null;
 let monthlyTrendChart = null;
