@@ -81,11 +81,13 @@ The Balance sheet should have these columns:
 - Added `updateAccountBalance()` function for expenses
 - Added `updateAccountBalanceForIncome()` function for income
 - Enhanced balance calculation logic
+- **Updated expense grouping to use main Categories instead of SubCategories**
 
 ### Key Functions
 - `updateAccountBalance(accountId, expenseAmount)` - Updates balance when expense is added
 - `updateAccountBalanceForIncome(accountId, incomeAmount)` - Updates balance when income is added
 - `findBalanceRow(accountId)` - Finds existing balance entry for an account
+- **Expense grouping now uses main Category names for charts and insights**
 
 ## Benefits
 1. **Real-time Balance Tracking**: No need to manually update balances

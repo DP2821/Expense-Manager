@@ -550,13 +550,24 @@ function getAnalyticsData(startDate, endDate) {
       transactionCount++;
       largestTransaction = Math.max(largestTransaction, amount);
 
-      // Category breakdown
+      // Category breakdown - Group by main Category instead of SubCategory
       var subCategory = subCategoryData.find(function(sc, index) {
         return index > 0 && sc[idx(subCategoryHeaders, 'Value')] == subCategoryId;
       });
       
+      var categoryName = 'Unknown';
       if (subCategory) {
-        var categoryName = subCategory[idx(subCategoryHeaders, 'Text')];
+        // Get the CategoryId from SubCategory
+        var categoryId = subCategory[idx(subCategoryHeaders, 'CategoryId')];
+        
+        // Find the main Category name using CategoryId
+        var mainCategory = categoryData.find(function(cat, index) {
+          return index > 0 && cat[idx(categoryHeaders, 'Value')] == categoryId;
+        });
+        
+        categoryName = mainCategory ? mainCategory[idx(categoryHeaders, 'Text')] : 'Unknown';
+        
+        // Add to category breakdown
         if (!categoryBreakdown[categoryName]) {
           categoryBreakdown[categoryName] = 0;
         }
@@ -571,12 +582,12 @@ function getAnalyticsData(startDate, endDate) {
       }
       monthlyTrends[monthKey] += amount;
 
-      // Add to filtered expenses
+      // Add to filtered expenses - Use main Category name
       filteredExpenses.push({
         date: formatDateForDashboard(dateObj),
         description: description,
         type: 'Expense',
-        category: subCategory ? subCategory[idx(subCategoryHeaders, 'Text')] : 'Unknown',
+        category: categoryName,
         amount: -amount
       });
     }
