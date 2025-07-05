@@ -18,6 +18,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <link rel="stylesheet" href="styles/index.css">
+    <link rel="stylesheet" href="styles/gradient-theme.css">
 </head>
 
 <body>
@@ -32,31 +33,35 @@
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
+                <!-- User Profile Dropdown and Navigation Links -->
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item">
-                        <a class="btn btn-outline-light mx-1 nav-link-btn" href="Dashboard.html">
+                        <a class="btn btn-gradient-primary mx-1 nav-link-btn" href="Dashboard.html">
                             <span class="material-icons align-middle">dashboard</span> Dashboard
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="btn btn-primary mx-1 nav-link-btn" href="Index.html">
-                            <span class="material-icons align-middle">add_circle</span> Add Expense
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="btn btn-success mx-1 nav-link-btn" href="Index.html#add-income-tab">
+                        <a class="btn btn-gradient-success mx-1 nav-link-btn" href="Index.html#add-income-tab">
                             <span class="material-icons align-middle">attach_money</span> Add Income
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="btn btn-warning mx-1 nav-link-btn" href="Chart.html">
-                            <span class="material-icons align-middle">insert_chart</span> Charts
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="btn btn-info mx-1 nav-link-btn" href="Balance.html">
+                        <a class="btn btn-gradient-info mx-1 nav-link-btn" href="Balance.html">
                             <span class="material-icons align-middle">account_balance</span> Balance
                         </a>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <span class="material-icons me-2">account_circle</span>
+                            <span id="userName">Loading...</span>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                            <li><h6 class="dropdown-header" id="userEmail">Loading...</h6></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="#" id="logoutBtn">
+                                <span class="material-icons align-middle me-2">logout</span>Logout
+                            </a></li>
+                        </ul>
                     </li>
                 </ul>
             </div>
@@ -78,8 +83,8 @@
             <div class="tab-pane fade show active" id="add-expense" role="tabpanel" aria-labelledby="add-expense-tab">
                 <div class="container">
                     <div class="mx-auto" style="max-width: 500px;">
-                        <div class="card my-4">
-                            <div class="card-header text-center">
+                        <div class="card my-4 chart-card">
+                            <div class="card-header text-center card-gradient-primary">
                                 <h5 class="card-title">Expense Details</h5>
                             </div>
                             <div class="card-body">
@@ -107,7 +112,7 @@
                                     <input class="form-control" type="date" name="payment-date" id="PaymentDate" required
                                         tabindex="8">
                                 </div>
-                                <button class="btn btn-dark w-100" type="submit" id="SaveExpense" tabindex="7">Save</button>
+                                <button class="btn btn-gradient-primary w-100" type="submit" id="SaveExpense" tabindex="7">Save</button>
                             </div>
                         </div>
                     </div>
@@ -115,8 +120,8 @@
             </div>
             <div class="tab-pane fade" id="add-income" role="tabpanel" aria-labelledby="add-income-tab">
                 <div class="mx-auto" style="max-width: 500px;">
-                    <div class="card my-4">
-                        <div class="card-header text-center">
+                    <div class="card my-4 chart-card">
+                        <div class="card-header text-center card-gradient-success">
                             <h5 class="card-title">Add Income</h5>
                         </div>
                         <div class="card-body">
@@ -140,7 +145,7 @@
                                 <div class="mb-3">
                                     <input class="form-control" type="date" name="income-date" id="IncomeDate" required tabindex="5">
                                 </div>
-                                <button class="btn btn-success w-100" type="submit" id="SaveIncome" tabindex="6">Save</button>
+                                <button class="btn btn-gradient-success w-100" type="submit" id="SaveIncome" tabindex="6">Save</button>
                             </form>
                         </div>
                     </div>
@@ -148,8 +153,8 @@
             </div>
             <div class="tab-pane fade" id="borrow-lent" role="tabpanel" aria-labelledby="borrow-lent-tab">
                 <div class="mx-auto" style="max-width: 500px;">
-                    <div class="card my-4">
-                        <div class="card-header text-center">
+                    <div class="card my-4 chart-card">
+                        <div class="card-header text-center card-gradient-info">
                             <h5 class="card-title">Borrow / Lent</h5>
                         </div>
                         <div class="card-body">
@@ -190,7 +195,7 @@
                                     <label for="BorrowLentReturnedDate" class="form-label">Borrow/Lent Returned Date</label>
                                     <input class="form-control" type="date" name="returned-date" id="BorrowLentReturnedDate" placeholder="Returned Date (if closed)" tabindex="8">
                                 </div>
-                                <button class="btn btn-info w-100" type="submit" id="SaveBorrowLent" tabindex="9">Save</button>
+                                <button class="btn btn-gradient-info w-100" type="submit" id="SaveBorrowLent" tabindex="9">Save</button>
                             </form>
                         </div>
                     </div>
@@ -228,4 +233,11 @@ toastr.options = {
     "hideMethod": "fadeOut"
 };
 </script>
-<script src="scripts/index.js"></script>
+    <!-- Firebase Authentication Guard -->
+    <script type="module" src="scripts/auth-guard.js"></script>
+    
+    <!-- Auth Helper -->
+    <script type="module" src="scripts/auth-helper.js"></script>
+    
+    <!-- Firestore-based Index Script -->
+    <script type="module" src="scripts/index-firestore.js"></script>
