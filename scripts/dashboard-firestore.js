@@ -4,8 +4,14 @@ import {
     getIncome, 
     getBorrowLent, 
     getBalance,
-    calculateCurrentBalance,
-    getAllDropdownData
+    getAllDropdownData,
+    updateExpense,
+    updateIncome,
+    deleteExpense,
+    deleteIncome,
+    searchTransactions,
+    updateBorrowLent,
+    deleteBorrowLent
 } from './firestore-service.js';
 import { getUserId } from './auth-helper.js';
 import { auth } from './firebase-config.js';
@@ -105,6 +111,24 @@ function setupDateFilters() {
         await applyDateFilter();
         hideLoader();
     });
+
+    // Search functionality
+    let searchTimeout;
+    document.getElementById('transactionSearch').addEventListener('input', function() {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(async () => {
+            await applySearchFilter();
+        }, 300);
+    });
+
+    // Clear search button
+    document.getElementById('clearSearch').addEventListener('click', async function() {
+        document.getElementById('transactionSearch').value = '';
+        await applySearchFilter();
+    });
+
+    // Setup edit/delete modal event handlers
+    setupModalEventHandlers();
 }
 
 async function applyDateFilter() {
@@ -131,6 +155,38 @@ async function applyDateFilter() {
         console.error('Error applying date filter:', error);
         if (typeof toastr !== 'undefined') {
             toastr.error('Failed to apply filter. Please try again.');
+        }
+    }
+}
+
+async function applySearchFilter() {
+    const searchTerm = document.getElementById('transactionSearch').value.trim();
+    const startDate = document.getElementById('startDate').value;
+    const endDate = document.getElementById('endDate').value;
+    
+    try {
+        if (searchTerm === '') {
+            // If no search term, use date filter
+            [expenses, income] = await Promise.all([
+                getExpenses(startDate, endDate),
+                getIncome(startDate, endDate)
+            ]);
+        } else {
+            // Apply search filter
+            const searchResults = await searchTransactions(searchTerm, startDate, endDate);
+            expenses = searchResults.expenses;
+            income = searchResults.income;
+        }
+        
+        // Update components
+        updateSummaryCards();
+        updateTransactionsTable();
+        updateSpendingInsights();
+        
+    } catch (error) {
+        console.error('Error applying search filter:', error);
+        if (typeof toastr !== 'undefined') {
+            toastr.error('Failed to apply search filter. Please try again.');
         }
     }
 }
@@ -219,6 +275,20 @@ function updateTransactionsTable() {
             <td class="text-end ${transaction.amount >= 0 ? 'text-success' : 'text-danger'}">
                 ₹ ${Math.abs(transaction.amount).toFixed(2)}
             </td>
+            <td class="text-center">
+                <div class="btn-group btn-group-sm" role="group">
+                    <button type="button" class="btn btn-outline-primary btn-sm" 
+                            onclick="editTransaction('${transaction.id}', '${transaction.type}')" 
+                            title="Edit">
+                        <span class="material-icons" style="font-size: 16px;">edit</span>
+                    </button>
+                    <button type="button" class="btn btn-outline-danger btn-sm" 
+                            onclick="deleteTransaction('${transaction.id}', '${transaction.type}')" 
+                            title="Delete">
+                        <span class="material-icons" style="font-size: 16px;">delete</span>
+                    </button>
+                </div>
+            </td>
         </tr>
     `).join('');
 }
@@ -227,7 +297,7 @@ function updateBorrowLentTable() {
     const tableBody = document.getElementById('borrow-lent-table');
     
     if (borrowLent.length === 0) {
-        tableBody.innerHTML = '<tr><td colspan="8" class="text-center text-muted">No borrow/lent records found</td></tr>';
+        tableBody.innerHTML = '<tr><td colspan="10" class="text-center text-muted">No borrow/lent records found</td></tr>';
         return;
     }
     
@@ -242,6 +312,7 @@ function updateBorrowLentTable() {
             <td>${item.person}</td>
             <td>${item.description}</td>
             <td>₹ ${item.amount.toFixed(2)}</td>
+            <td>${item.accountId ? getAccountName(item.accountId) : '-'}</td>
             <td>${formatDate(item.dueDate)}</td>
             <td>
                 <span class="badge ${item.status === 'Open' ? 'bg-warning' : 'bg-success'}">
@@ -249,6 +320,20 @@ function updateBorrowLentTable() {
                 </span>
             </td>
             <td>${item.returnedDate ? formatDate(item.returnedDate) : '-'}</td>
+            <td class="text-center">
+                <div class="btn-group btn-group-sm" role="group">
+                    <button type="button" class="btn btn-outline-primary btn-sm" 
+                            onclick="editBorrowLent('${item.id}')" 
+                            title="Edit">
+                        <span class="material-icons" style="font-size: 16px;">edit</span>
+                    </button>
+                    <button type="button" class="btn btn-outline-danger btn-sm" 
+                            onclick="deleteBorrowLent('${item.id}')" 
+                            title="Delete">
+                        <span class="material-icons" style="font-size: 16px;">delete</span>
+                    </button>
+                </div>
+            </td>
         </tr>
     `).join('');
 }
@@ -504,4 +589,333 @@ function showLoader() {
 
 function hideLoader() {
     $("#globalLoader").fadeOut();
-} 
+}
+
+// Modal event handlers
+function setupModalEventHandlers() {
+    // Save transaction button
+    document.getElementById('saveTransactionBtn').addEventListener('click', async function() {
+        await saveTransaction();
+    });
+
+    // Confirm delete button
+    document.getElementById('confirmDeleteBtn').addEventListener('click', async function() {
+        await confirmDeleteTransaction();
+    });
+
+    // Modal event listeners for dropdown population
+    document.getElementById('editPaymentType').addEventListener('change', function() {
+        populateSubPaymentTypes();
+    });
+
+    document.getElementById('editCategory').addEventListener('change', function() {
+        populateSubCategories();
+    });
+}
+
+// Global functions for edit/delete (accessible from onclick)
+window.editTransaction = function(transactionId, transactionType) {
+    openEditModal(transactionId, transactionType);
+};
+
+window.deleteTransaction = function(transactionId, transactionType) {
+    openDeleteModal(transactionId, transactionType);
+};
+
+window.editBorrowLent = function(borrowLentId) {
+    openEditBorrowLentModal(borrowLentId);
+};
+
+window.deleteBorrowLent = function(borrowLentId) {
+    openDeleteBorrowLentModal(borrowLentId);
+};
+
+// Open edit modal
+async function openEditModal(transactionId, transactionType) {
+    try {
+        let transaction;
+        if (transactionType === 'Expense') {
+            transaction = expenses.find(e => e.id === transactionId);
+        } else {
+            transaction = income.find(i => i.id === transactionId);
+        }
+
+        if (!transaction) {
+            toastr.error('Transaction not found');
+            return;
+        }
+
+        // Populate form fields
+        document.getElementById('editTransactionId').value = transactionId;
+        document.getElementById('editTransactionType').value = transactionType;
+        document.getElementById('editAmount').value = Math.abs(transaction.amount);
+        document.getElementById('editDescription').value = transaction.description;
+
+        if (transactionType === 'Expense') {
+            document.getElementById('editDate').value = transaction.paymentDate;
+            document.getElementById('expenseFields').style.display = 'block';
+            document.getElementById('incomeFields').style.display = 'none';
+            
+            // Populate dropdowns
+            populateCategories();
+            populatePaymentTypes();
+            populateSubCategories();
+            populateSubPaymentTypes();
+            
+            // Set selected values
+            document.getElementById('editCategory').value = transaction.categoryId;
+            document.getElementById('editPaymentType').value = transaction.paymentTypeId;
+            document.getElementById('editSubCategory').value = transaction.subCategoryId || '';
+            document.getElementById('editSubPaymentType').value = transaction.paymentSubTypeId;
+            
+        } else {
+            document.getElementById('editDate').value = transaction.date;
+            document.getElementById('expenseFields').style.display = 'none';
+            document.getElementById('incomeFields').style.display = 'block';
+            
+            // Populate income dropdowns
+            populateIncomeSources();
+            populateIncomeAccounts();
+            
+            // Set selected values
+            document.getElementById('editIncomeSource').value = transaction.incomeSourceId;
+            document.getElementById('editIncomeAccount').value = transaction.accountId || '';
+        }
+
+        // Show modal
+        const modal = new bootstrap.Modal(document.getElementById('editTransactionModal'));
+        modal.show();
+
+    } catch (error) {
+        console.error('Error opening edit modal:', error);
+        toastr.error('Failed to open edit modal');
+    }
+}
+
+// Open delete modal
+function openDeleteModal(transactionId, transactionType) {
+    let transaction;
+    if (transactionType === 'Expense') {
+        transaction = expenses.find(e => e.id === transactionId);
+    } else {
+        transaction = income.find(i => i.id === transactionId);
+    }
+
+    if (!transaction) {
+        toastr.error('Transaction not found');
+        return;
+    }
+
+    // Set transaction details for confirmation
+    document.getElementById('deleteTransactionDetails').textContent = 
+        `${transactionType}: ${transaction.description} - ₹ ${Math.abs(transaction.amount).toFixed(2)}`;
+
+    // Store transaction info for deletion
+    document.getElementById('deleteTransactionModal').setAttribute('data-transaction-id', transactionId);
+    document.getElementById('deleteTransactionModal').setAttribute('data-transaction-type', transactionType);
+
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('deleteTransactionModal'));
+    modal.show();
+}
+
+// Save transaction
+async function saveTransaction() {
+    try {
+        const transactionId = document.getElementById('editTransactionId').value;
+        const transactionType = document.getElementById('editTransactionType').value;
+        const updateBalance = document.getElementById('editUpdateBalance').checked;
+
+        if (transactionType === 'Expense') {
+            const expenseData = {
+                amount: document.getElementById('editAmount').value,
+                description: document.getElementById('editDescription').value,
+                paymentDate: document.getElementById('editDate').value,
+                category: document.getElementById('editCategory').value,
+                subCategoryTypeId: document.getElementById('editSubCategory').value,
+                paymentType: document.getElementById('editPaymentType').value,
+                subPaymentTypeId: document.getElementById('editSubPaymentType').value,
+                updateBalance: updateBalance.toString()
+            };
+
+            await updateExpense(transactionId, expenseData);
+            toastr.success('Expense updated successfully!');
+        } else {
+            const incomeData = {
+                amount: document.getElementById('editAmount').value,
+                description: document.getElementById('editDescription').value,
+                date: document.getElementById('editDate').value,
+                incomeSource: document.getElementById('editIncomeSource').value,
+                accountId: document.getElementById('editIncomeAccount').value,
+                updateBalance: updateBalance.toString()
+            };
+
+            await updateIncome(transactionId, incomeData);
+            toastr.success('Income updated successfully!');
+        }
+
+        // Close modal and refresh data
+        const modal = bootstrap.Modal.getInstance(document.getElementById('editTransactionModal'));
+        modal.hide();
+        
+        await loadAllData();
+        updateTransactionsTable();
+        updateSummaryCards();
+        updateSpendingInsights();
+
+    } catch (error) {
+        console.error('Error saving transaction:', error);
+        toastr.error('Failed to save transaction. Please try again.');
+    }
+}
+
+// Confirm delete transaction
+async function confirmDeleteTransaction() {
+    try {
+        const transactionId = document.getElementById('deleteTransactionModal').getAttribute('data-transaction-id');
+        const transactionType = document.getElementById('deleteTransactionModal').getAttribute('data-transaction-type');
+
+        if (transactionType === 'Expense') {
+            await deleteExpense(transactionId);
+            toastr.success('Expense deleted successfully!');
+        } else {
+            await deleteIncome(transactionId);
+            toastr.success('Income deleted successfully!');
+        }
+
+        // Close modal and refresh data
+        const modal = bootstrap.Modal.getInstance(document.getElementById('deleteTransactionModal'));
+        modal.hide();
+        
+        await loadAllData();
+        updateTransactionsTable();
+        updateSummaryCards();
+        updateSpendingInsights();
+
+    } catch (error) {
+        console.error('Error deleting transaction:', error);
+        toastr.error('Failed to delete transaction. Please try again.');
+    }
+}
+
+// Populate dropdown functions for edit modal
+function populateCategories() {
+    const select = document.getElementById('editCategory');
+    select.innerHTML = '<option value="">Select Category</option>';
+    dropdownData.Category?.forEach(category => {
+        select.innerHTML += `<option value="${category.Value}">${category.Text}</option>`;
+    });
+}
+
+function populatePaymentTypes() {
+    const select = document.getElementById('editPaymentType');
+    select.innerHTML = '<option value="">Select Payment Type</option>';
+    dropdownData.PaymentType?.forEach(type => {
+        select.innerHTML += `<option value="${type.Value}">${type.Text}</option>`;
+    });
+}
+
+function populateSubCategories() {
+    const select = document.getElementById('editSubCategory');
+    const categoryId = document.getElementById('editCategory').value;
+    
+    select.innerHTML = '<option value="">Select Sub Category</option>';
+    if (categoryId) {
+        dropdownData.SubCategory?.forEach(subCategory => {
+            if (subCategory.CategoryId == categoryId) {
+                select.innerHTML += `<option value="${subCategory.Value}">${subCategory.Text}</option>`;
+            }
+        });
+    }
+}
+
+function populateSubPaymentTypes() {
+    const select = document.getElementById('editSubPaymentType');
+    const categoryId = document.getElementById('editPaymentType').value;
+    
+    select.innerHTML = '<option value="">Select Account</option>';
+    if (categoryId) {
+        dropdownData.PaymentSubType?.forEach(subType => {
+            if (subType.PaymentType == categoryId) {
+                select.innerHTML += `<option value="${subType.Value}">${subType.Text}</option>`;
+            }
+        });
+    }
+}
+
+function populateIncomeSources() {
+    const select = document.getElementById('editIncomeSource');
+    select.innerHTML = '<option value="">Select Income Source</option>';
+    dropdownData.IncomeCategory?.forEach(source => {
+        select.innerHTML += `<option value="${source.Value}">${source.Text}</option>`;
+    });
+}
+
+function populateIncomeAccounts() {
+    const select = document.getElementById('editIncomeAccount');
+    select.innerHTML = '<option value="">Select Account</option>';
+    dropdownData.PaymentSubType?.forEach(account => {
+        select.innerHTML += `<option value="${account.Value}">${account.Text}</option>`;
+    });
+}
+
+// Helper function to get account name
+function getAccountName(accountId) {
+    if (!dropdownData.PaymentSubType) {
+        return 'Loading...';
+    }
+    const account = dropdownData.PaymentSubType.find(acc => acc.Value === accountId);
+    return account ? account.Text : `Account ${accountId}`;
+}
+
+// Open edit borrow/lent modal
+async function openEditBorrowLentModal(borrowLentId) {
+    try {
+        const borrowLentRecord = borrowLent.find(b => b.id === borrowLentId);
+
+        if (!borrowLentRecord) {
+            toastr.error('Borrow/Lent record not found');
+            return;
+        }
+
+        // For now, show a simple alert with edit info
+        // In a full implementation, you would create a modal similar to the transaction edit modal
+        toastr.info('Edit functionality for Borrow/Lent will be implemented in the next update');
+        
+    } catch (error) {
+        console.error('Error opening edit borrow/lent modal:', error);
+        toastr.error('Failed to open edit modal');
+    }
+}
+
+// Open delete borrow/lent modal
+function openDeleteBorrowLentModal(borrowLentId) {
+    const borrowLentRecord = borrowLent.find(b => b.id === borrowLentId);
+
+    if (!borrowLentRecord) {
+        toastr.error('Borrow/Lent record not found');
+        return;
+    }
+
+    // For now, show a simple confirmation
+    if (confirm(`Are you sure you want to delete this ${borrowLentRecord.type} record?\n\n${borrowLentRecord.type}: ${borrowLentRecord.description} - ₹ ${borrowLentRecord.amount.toFixed(2)}\n\nThis will also update the account balance accordingly.`)) {
+        confirmDeleteBorrowLent(borrowLentId);
+    }
+}
+
+// Confirm delete borrow/lent
+async function confirmDeleteBorrowLent(borrowLentId) {
+    try {
+        await deleteBorrowLent(borrowLentId);
+        toastr.success('Borrow/Lent record deleted successfully!');
+
+        // Refresh data
+        await loadAllData();
+        updateBorrowLentTable();
+        updateSummaryCards();
+
+    } catch (error) {
+        console.error('Error deleting borrow/lent:', error);
+        toastr.error('Failed to delete borrow/lent record. Please try again.');
+    }
+}
