@@ -174,28 +174,41 @@
                                     <input class="form-control" type="number" name="amount" id="BorrowLentAmount" placeholder="Amount" required tabindex="3">
                                 </div>
                                 <div class="mb-3">
-                                    <input class="form-control" type="text" name="description" id="BorrowLentDescription" placeholder="Description" required tabindex="4">
+                                    <select class="form-select" id="BorrowLentAccount" required tabindex="4">
+                                        <option value="" disabled selected>Select Account</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <input class="form-control" type="text" name="description" id="BorrowLentDescription" placeholder="Description" required tabindex="5">
                                 </div>
                                 <div class="mb-3">
                                     <label for="BorrowLentDate" class="form-label">Borrow/Lent Date</label>
-                                    <input class="form-control" type="date" name="date" id="BorrowLentDate" required tabindex="5">
+                                    <input class="form-control" type="date" name="date" id="BorrowLentDate" required tabindex="6">
                                 </div>
                                 <div class="mb-3">
                                     <label for="BorrowLentDueDate" class="form-label">Borrow/Lent Due Date</label>
-                                    <input class="form-control" type="date" name="due-date" id="BorrowLentDueDate" placeholder="Due Date" required tabindex="6">
+                                    <input class="form-control" type="date" name="due-date" id="BorrowLentDueDate" placeholder="Due Date" required tabindex="7">
                                 </div>
                                 <div class="mb-3">
                                     <label for="BorrowLentStatus" class="form-label">Status</label>
-                                    <select class="form-select" id="BorrowLentStatus" required tabindex="7">
+                                    <select class="form-select" id="BorrowLentStatus" required tabindex="8">
                                         <option value="Open" selected>Open</option>
                                         <option value="Closed">Closed</option>
                                     </select>
                                 </div>
                                 <div class="mb-3">
                                     <label for="BorrowLentReturnedDate" class="form-label">Borrow/Lent Returned Date</label>
-                                    <input class="form-control" type="date" name="returned-date" id="BorrowLentReturnedDate" placeholder="Returned Date (if closed)" tabindex="8">
+                                    <input class="form-control" type="date" name="returned-date" id="BorrowLentReturnedDate" placeholder="Returned Date (if closed)" tabindex="9">
                                 </div>
-                                <button class="btn btn-gradient-info w-100" type="submit" id="SaveBorrowLent" tabindex="9">Save</button>
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="BorrowLentUpdateBalance" checked>
+                                        <label class="form-check-label" for="BorrowLentUpdateBalance">
+                                            Update account balance
+                                        </label>
+                                    </div>
+                                </div>
+                                <button class="btn btn-gradient-info w-100" type="submit" id="SaveBorrowLent" tabindex="10">Save</button>
                             </form>
                         </div>
                     </div>

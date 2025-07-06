@@ -237,31 +237,36 @@ export async function getAllDropdownData() {
       getDocs(
         query(
           collection(db, COLLECTIONS.CATEGORIES),
-          where("userId", "==", userId)
+          where("userId", "==", userId),
+          orderBy("id", "asc")
         )
       ),
       getDocs(
         query(
           collection(db, COLLECTIONS.PAYMENT_TYPES),
-          where("userId", "==", userId)
+          where("userId", "==", userId),
+          orderBy("id", "asc")
         )
       ),
       getDocs(
         query(
           collection(db, COLLECTIONS.PAYMENT_SUB_TYPES),
-          where("userId", "==", userId)
+          where("userId", "==", userId),
+          orderBy("id", "asc")
         )
       ),
       getDocs(
         query(
           collection(db, COLLECTIONS.SUB_CATEGORIES),
-          where("userId", "==", userId)
+          where("userId", "==", userId),
+          orderBy("id", "asc")
         )
       ),
       getDocs(
         query(
           collection(db, COLLECTIONS.INCOME_CATEGORIES),
-          where("userId", "==", userId)
+          where("userId", "==", userId),
+          orderBy("id", "asc")
         )
       ),
     ]);
@@ -380,6 +385,7 @@ export async function addBorrowLent(borrowLentData) {
       dueDate: borrowLentData.dueDate,
       status: borrowLentData.status,
       returnedDate: borrowLentData.returnedDate || null,
+      accountId: borrowLentData.accountId ? parseInt(borrowLentData.accountId) : null,
       createdAt: serverTimestamp(),
     };
 
@@ -387,6 +393,18 @@ export async function addBorrowLent(borrowLentData) {
       collection(db, COLLECTIONS.BORROW_LENT),
       borrowLent
     );
+
+    // Update balance if account is selected and updateBalance is true
+    if (borrowLentData.updateBalance === "true" && borrowLentData.accountId) {
+      if (borrowLentData.borrowLentType === "Borrow") {
+        // When borrowing money, add to account balance (money coming in)
+        await updateAccountBalanceForIncome(borrowLentData.accountId, borrowLentData.amount);
+      } else if (borrowLentData.borrowLentType === "Lent") {
+        // When lending money, subtract from account balance (money going out)
+        await updateAccountBalance(borrowLentData.accountId, borrowLentData.amount);
+      }
+    }
+
     return { id: docRef.id, ...borrowLent };
   } catch (error) {
     console.error("Error adding borrow/lent:", error);
@@ -684,6 +702,438 @@ export async function updateBalance(balanceId, balanceData) {
     return { id: balanceId, ...balanceData };
   } catch (error) {
     console.error("Error updating balance:", error);
+    throw error;
+  }
+}
+
+// Update expense with balance adjustment
+export async function updateExpense(expenseId, expenseData) {
+  const userId = await getCurrentUserId();
+
+  try {
+    // Get the original expense to calculate balance adjustment
+    const originalExpenseQuery = query(
+      collection(db, COLLECTIONS.EXPENSES),
+      where("userId", "==", userId),
+      where("__name__", "==", expenseId)
+    );
+    const originalExpenseSnapshot = await getDocs(originalExpenseQuery);
+    
+    if (originalExpenseSnapshot.empty) {
+      throw new Error("Expense not found");
+    }
+
+    const originalExpense = originalExpenseSnapshot.docs[0].data();
+    const originalAmount = originalExpense.amount;
+    const originalAccountId = originalExpense.paymentSubTypeId;
+    const newAmount = parseFloat(expenseData.amount);
+    const newAccountId = parseInt(expenseData.subPaymentTypeId);
+
+    // Update the expense
+    const expenseRef = doc(db, COLLECTIONS.EXPENSES, expenseId);
+    const updatedExpense = {
+      amount: newAmount,
+      paymentTypeId: parseInt(expenseData.paymentType),
+      paymentSubTypeId: newAccountId,
+      categoryId: parseInt(expenseData.category),
+      subCategoryId: parseInt(expenseData.subCategoryTypeId),
+      description: expenseData.description,
+      paymentDate: expenseData.paymentDate,
+      updatedAt: serverTimestamp(),
+    };
+
+    await updateDoc(expenseRef, updatedExpense);
+
+    // Update balances if requested
+    if (expenseData.updateBalance === "true") {
+      // Reverse the original transaction
+      await reverseAccountBalance(originalAccountId, originalAmount);
+      // Apply the new transaction
+      await updateAccountBalance(newAccountId, newAmount);
+    }
+
+    return { id: expenseId, ...updatedExpense };
+  } catch (error) {
+    console.error("Error updating expense:", error);
+    throw error;
+  }
+}
+
+// Update income with balance adjustment
+export async function updateIncome(incomeId, incomeData) {
+  const userId = await getCurrentUserId();
+
+  try {
+    // Get the original income to calculate balance adjustment
+    const originalIncomeQuery = query(
+      collection(db, COLLECTIONS.INCOME),
+      where("userId", "==", userId),
+      where("__name__", "==", incomeId)
+    );
+    const originalIncomeSnapshot = await getDocs(originalIncomeQuery);
+    
+    if (originalIncomeSnapshot.empty) {
+      throw new Error("Income not found");
+    }
+
+    const originalIncome = originalIncomeSnapshot.docs[0].data();
+    const originalAmount = originalIncome.amount;
+    const originalAccountId = originalIncome.accountId;
+    const newAmount = parseFloat(incomeData.amount);
+    const newAccountId = parseInt(incomeData.accountId);
+
+    // Update the income
+    const incomeRef = doc(db, COLLECTIONS.INCOME, incomeId);
+    const updatedIncome = {
+      amount: newAmount,
+      description: incomeData.description,
+      incomeSourceId: parseInt(incomeData.incomeSource),
+      accountId: newAccountId,
+      date: incomeData.date,
+      updatedAt: serverTimestamp(),
+    };
+
+    await updateDoc(incomeRef, updatedIncome);
+
+    // Update balances if requested
+    if (incomeData.updateBalance === "true" && newAccountId) {
+      // Reverse the original transaction
+      await reverseAccountBalanceForIncome(originalAccountId, originalAmount);
+      // Apply the new transaction
+      await updateAccountBalanceForIncome(newAccountId, newAmount);
+    }
+
+    return { id: incomeId, ...updatedIncome };
+  } catch (error) {
+    console.error("Error updating income:", error);
+    throw error;
+  }
+}
+
+// Delete expense with balance adjustment
+export async function deleteExpense(expenseId) {
+  const userId = await getCurrentUserId();
+
+  try {
+    // Get the expense to calculate balance adjustment
+    const expenseQuery = query(
+      collection(db, COLLECTIONS.EXPENSES),
+      where("userId", "==", userId),
+      where("__name__", "==", expenseId)
+    );
+    const expenseSnapshot = await getDocs(expenseQuery);
+    
+    if (expenseSnapshot.empty) {
+      throw new Error("Expense not found");
+    }
+
+    const expense = expenseSnapshot.docs[0].data();
+    const expenseRef = doc(db, COLLECTIONS.EXPENSES, expenseId);
+
+    // Delete the expense
+    await deleteDoc(expenseRef);
+
+    // Reverse the balance adjustment
+    await reverseAccountBalance(expense.paymentSubTypeId, expense.amount);
+
+    return { success: true, message: "Expense deleted successfully" };
+  } catch (error) {
+    console.error("Error deleting expense:", error);
+    throw error;
+  }
+}
+
+// Delete income with balance adjustment
+export async function deleteIncome(incomeId) {
+  const userId = await getCurrentUserId();
+
+  try {
+    // Get the income to calculate balance adjustment
+    const incomeQuery = query(
+      collection(db, COLLECTIONS.INCOME),
+      where("userId", "==", userId),
+      where("__name__", "==", incomeId)
+    );
+    const incomeSnapshot = await getDocs(incomeQuery);
+    
+    if (incomeSnapshot.empty) {
+      throw new Error("Income not found");
+    }
+
+    const income = incomeSnapshot.docs[0].data();
+    const incomeRef = doc(db, COLLECTIONS.INCOME, incomeId);
+
+    // Delete the income
+    await deleteDoc(incomeRef);
+
+    // Reverse the balance adjustment
+    if (income.accountId) {
+      await reverseAccountBalanceForIncome(income.accountId, income.amount);
+    }
+
+    return { success: true, message: "Income deleted successfully" };
+  } catch (error) {
+    console.error("Error deleting income:", error);
+    throw error;
+  }
+}
+
+// Search transactions by description or amount
+export async function searchTransactions(searchTerm, startDate = null, endDate = null) {
+  const userId = await getCurrentUserId();
+
+  try {
+    // Get expenses and income
+    let expensesQuery = query(
+      collection(db, COLLECTIONS.EXPENSES),
+      where("userId", "==", userId),
+      orderBy("paymentDate", "desc")
+    );
+
+    let incomeQuery = query(
+      collection(db, COLLECTIONS.INCOME),
+      where("userId", "==", userId),
+      orderBy("date", "desc")
+    );
+
+    // Apply date filter if provided
+    if (startDate && endDate) {
+      expensesQuery = query(
+        collection(db, COLLECTIONS.EXPENSES),
+        where("userId", "==", userId),
+        where("paymentDate", ">=", startDate),
+        where("paymentDate", "<=", endDate),
+        orderBy("paymentDate", "desc")
+      );
+
+      incomeQuery = query(
+        collection(db, COLLECTIONS.INCOME),
+        where("userId", "==", userId),
+        where("date", ">=", startDate),
+        where("date", "<=", endDate),
+        orderBy("date", "desc")
+      );
+    }
+
+    const [expensesSnapshot, incomeSnapshot] = await Promise.all([
+      getDocs(expensesQuery),
+      getDocs(incomeQuery)
+    ]);
+
+    // Filter by search term
+    const searchLower = searchTerm.toLowerCase();
+    const filteredExpenses = expensesSnapshot.docs
+      .map(doc => ({ id: doc.id, ...doc.data() }))
+      .filter(expense => 
+        expense.description.toLowerCase().includes(searchLower) ||
+        expense.amount.toString().includes(searchTerm)
+      );
+
+    const filteredIncome = incomeSnapshot.docs
+      .map(doc => ({ id: doc.id, ...doc.data() }))
+      .filter(income => 
+        income.description.toLowerCase().includes(searchLower) ||
+        income.amount.toString().includes(searchTerm)
+      );
+
+    return {
+      expenses: filteredExpenses,
+      income: filteredIncome
+    };
+  } catch (error) {
+    console.error("Error searching transactions:", error);
+    throw error;
+  }
+}
+
+// Helper function to reverse account balance for expenses
+async function reverseAccountBalance(accountId, expenseAmount) {
+  const userId = await getCurrentUserId();
+
+  try {
+    // Get account type
+    const accountQuery = query(
+      collection(db, COLLECTIONS.PAYMENT_SUB_TYPES),
+      where("userId", "==", userId),
+      where("id", "==", parseInt(accountId))
+    );
+    const accountSnapshot = await getDocs(accountQuery);
+
+    if (accountSnapshot.empty) {
+      return; // Account not found, skip balance update
+    }
+
+    const account = accountSnapshot.docs[0].data();
+    const isCreditCard = account.paymentTypeId === 3;
+
+    // Find existing balance
+    const balanceQuery = query(
+      collection(db, COLLECTIONS.BALANCE),
+      where("userId", "==", userId),
+      where("accountId", "==", parseInt(accountId))
+    );
+    const balanceSnapshot = await getDocs(balanceQuery);
+
+    if (!balanceSnapshot.empty) {
+      // Update existing balance
+      const balanceDoc = balanceSnapshot.docs[0];
+      const currentBalance = balanceDoc.data().balance || 0;
+
+      let newBalance;
+      if (isCreditCard) {
+        // For credit cards: decrease used amount (reverse the expense)
+        newBalance = currentBalance - parseFloat(expenseAmount);
+      } else {
+        // For bank accounts: increase balance (reverse the expense)
+        newBalance = currentBalance + parseFloat(expenseAmount);
+      }
+
+      await updateDoc(doc(db, COLLECTIONS.BALANCE, balanceDoc.id), {
+        balance: newBalance,
+        lastUpdated: serverTimestamp(),
+      });
+    }
+  } catch (error) {
+    console.error("Error reversing account balance:", error);
+    throw error;
+  }
+}
+
+// Helper function to reverse account balance for income
+async function reverseAccountBalanceForIncome(accountId, incomeAmount) {
+  const userId = await getCurrentUserId();
+
+  try {
+    // Find existing balance
+    const balanceQuery = query(
+      collection(db, COLLECTIONS.BALANCE),
+      where("userId", "==", userId),
+      where("accountId", "==", parseInt(accountId))
+    );
+    const balanceSnapshot = await getDocs(balanceQuery);
+
+    if (!balanceSnapshot.empty) {
+      // Update existing balance
+      const balanceDoc = balanceSnapshot.docs[0];
+      const currentBalance = balanceDoc.data().balance || 0;
+      const newBalance = currentBalance - parseFloat(incomeAmount); // Reverse the income
+
+      await updateDoc(doc(db, COLLECTIONS.BALANCE, balanceDoc.id), {
+        balance: newBalance,
+        lastUpdated: serverTimestamp(),
+      });
+    }
+  } catch (error) {
+    console.error("Error reversing account balance for income:", error);
+    throw error;
+  }
+}
+
+// Update borrow/lent with balance adjustment
+export async function updateBorrowLent(borrowLentId, borrowLentData) {
+  const userId = await getCurrentUserId();
+
+  try {
+    // Get the original borrow/lent to calculate balance adjustment
+    const originalBorrowLentQuery = query(
+      collection(db, COLLECTIONS.BORROW_LENT),
+      where("userId", "==", userId),
+      where("__name__", "==", borrowLentId)
+    );
+    const originalBorrowLentSnapshot = await getDocs(originalBorrowLentQuery);
+    
+    if (originalBorrowLentSnapshot.empty) {
+      throw new Error("Borrow/Lent record not found");
+    }
+
+    const originalBorrowLent = originalBorrowLentSnapshot.docs[0].data();
+    const originalAmount = originalBorrowLent.amount;
+    const originalAccountId = originalBorrowLent.accountId;
+    const originalType = originalBorrowLent.type;
+    const newAmount = parseFloat(borrowLentData.amount);
+    const newAccountId = borrowLentData.accountId ? parseInt(borrowLentData.accountId) : null;
+    const newType = borrowLentData.borrowLentType;
+
+    // Update the borrow/lent record
+    const borrowLentRef = doc(db, COLLECTIONS.BORROW_LENT, borrowLentId);
+    const updatedBorrowLent = {
+      type: newType,
+      person: borrowLentData.person,
+      amount: newAmount,
+      description: borrowLentData.description,
+      date: borrowLentData.date,
+      dueDate: borrowLentData.dueDate,
+      status: borrowLentData.status,
+      returnedDate: borrowLentData.returnedDate || null,
+      accountId: newAccountId,
+      updatedAt: serverTimestamp(),
+    };
+
+    await updateDoc(borrowLentRef, updatedBorrowLent);
+
+    // Update balances if requested
+    if (borrowLentData.updateBalance === "true") {
+      // Reverse the original transaction
+      if (originalAccountId) {
+        if (originalType === "Borrow") {
+          await reverseAccountBalanceForIncome(originalAccountId, originalAmount);
+        } else if (originalType === "Lent") {
+          await reverseAccountBalance(originalAccountId, originalAmount);
+        }
+      }
+
+      // Apply the new transaction
+      if (newAccountId) {
+        if (newType === "Borrow") {
+          await updateAccountBalanceForIncome(newAccountId, newAmount);
+        } else if (newType === "Lent") {
+          await updateAccountBalance(newAccountId, newAmount);
+        }
+      }
+    }
+
+    return { id: borrowLentId, ...updatedBorrowLent };
+  } catch (error) {
+    console.error("Error updating borrow/lent:", error);
+    throw error;
+  }
+}
+
+// Delete borrow/lent with balance adjustment
+export async function deleteBorrowLent(borrowLentId) {
+  const userId = await getCurrentUserId();
+
+  try {
+    // Get the borrow/lent to calculate balance adjustment
+    const borrowLentQuery = query(
+      collection(db, COLLECTIONS.BORROW_LENT),
+      where("userId", "==", userId),
+      where("__name__", "==", borrowLentId)
+    );
+    const borrowLentSnapshot = await getDocs(borrowLentQuery);
+    
+    if (borrowLentSnapshot.empty) {
+      throw new Error("Borrow/Lent record not found");
+    }
+
+    const borrowLent = borrowLentSnapshot.docs[0].data();
+    const borrowLentRef = doc(db, COLLECTIONS.BORROW_LENT, borrowLentId);
+
+    // Delete the borrow/lent record
+    await deleteDoc(borrowLentRef);
+
+    // Reverse the balance adjustment
+    if (borrowLent.accountId) {
+      if (borrowLent.type === "Borrow") {
+        await reverseAccountBalanceForIncome(borrowLent.accountId, borrowLent.amount);
+      } else if (borrowLent.type === "Lent") {
+        await reverseAccountBalance(borrowLent.accountId, borrowLent.amount);
+      }
+    }
+
+    return { success: true, message: "Borrow/Lent record deleted successfully" };
+  } catch (error) {
+    console.error("Error deleting borrow/lent:", error);
     throw error;
   }
 }

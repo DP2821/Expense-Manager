@@ -102,6 +102,9 @@ async function GetAllDropDownData() {
 
         // Populate income account dropdown with bank accounts only
         FillIncomeAccountDropdown(response.PaymentSubType, response.PaymentType);
+        
+        // Populate borrow/lent account dropdown with bank accounts only
+        FillBorrowLentAccountDropdown(response.PaymentSubType, response.PaymentType);
     } catch (error) {
         console.error('Error getting dropdown data:', error);
         throw error;
@@ -165,6 +168,22 @@ function FillIncomeAccountDropdown(paymentSubTypes, paymentTypes) {
     });
     
     $("#IncomeAccount").html(options);
+}
+
+function FillBorrowLentAccountDropdown(paymentSubTypes, paymentTypes) {
+    var options = '<option value="" disabled selected>Select Account</option>';
+    
+    // Filter for bank accounts only (not credit cards)
+    var bankAccounts = paymentSubTypes.filter(function(account) {
+        // Assuming credit card type is 3, adjust if different
+        return account.PaymentType != 3;
+    });
+    
+    $.each(bankAccounts, function (i, val) {
+        options += '<option value = "' + val.Value + '" >' + val.Text + '</option>';
+    });
+    
+    $("#BorrowLentAccount").html(options);
 }
 
 function FillDropDown(id, data, value, hasSelect, defaultText) {
@@ -312,19 +331,37 @@ async function InsertBorrowLent() {
         date: document.getElementById('BorrowLentDate').value,
         dueDate: document.getElementById('BorrowLentDueDate').value,
         status: document.getElementById('BorrowLentStatus').value,
-        returnedDate: document.getElementById('BorrowLentReturnedDate').value
+        returnedDate: document.getElementById('BorrowLentReturnedDate').value,
+        accountId: document.getElementById('BorrowLentAccount').value,
+        updateBalance: document.getElementById('BorrowLentUpdateBalance').checked.toString()
     };
+
+    // Validate required fields
+    if (!data.borrowLentType || !data.person || !data.amount || !data.description || 
+        !data.date || !data.dueDate || !data.status || !data.accountId) {
+        if (typeof toastr !== 'undefined') {
+            toastr.warning("Please fill all required details...");
+        } else {
+            alert("Please fill all required details...");
+        }
+        hideLoader();
+        return;
+    }
 
     try {
         await addBorrowLent(data);
         
         if (typeof toastr !== 'undefined') {
-            toastr.success('Borrow/Lent record saved successfully!');
+            const balanceMessage = data.updateBalance === "true" ? " Account balance updated." : "";
+            toastr.success('Borrow/Lent record saved successfully!' + balanceMessage);
         } else {
-            alert('Borrow/Lent record saved successfully!');
+            const balanceMessage = data.updateBalance === "true" ? " Account balance updated." : "";
+            alert('Borrow/Lent record saved successfully!' + balanceMessage);
         }
         
         document.getElementById('borrow-lent-form').reset();
+        // Reset the checkbox to checked
+        document.getElementById('BorrowLentUpdateBalance').checked = true;
         hideLoader();
     } catch (error) {
         console.error('Error inserting borrow/lent:', error);
