@@ -42,6 +42,9 @@ async function initializeDashboard() {
         // Set up date filters AFTER data is loaded
         setupDateFilters();
         
+        // Apply current month filter by default
+        await applyDateFilter();
+        
         // Initialize charts
         initializeCharts();
         
@@ -90,7 +93,7 @@ async function loadAllData() {
 function setupDateFilters() {
     // Set default date range (current month)
     const now = new Date();
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 2);
     const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
     
     document.getElementById('startDate').value = formatDateForInput(startOfMonth);
@@ -108,6 +111,38 @@ function setupDateFilters() {
         showLoader();
         document.getElementById('startDate').value = formatDateForInput(startOfMonth);
         document.getElementById('endDate').value = formatDateForInput(endOfMonth);
+        await applyDateFilter();
+        hideLoader();
+    });
+
+    // Quick filter buttons
+    document.getElementById('quickFilterCurrentMonth').addEventListener('click', async function() {
+        const now = new Date();
+        const start = new Date(now.getFullYear(), now.getMonth(), 2);
+        const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+        document.getElementById('startDate').value = formatDateForInput(start);
+        document.getElementById('endDate').value = formatDateForInput(end);
+        showLoader();
+        await applyDateFilter();
+        hideLoader();
+    });
+    document.getElementById('quickFilterPreviousMonth').addEventListener('click', async function() {
+        const now = new Date();
+        const start = new Date(now.getFullYear(), now.getMonth() - 1, 2);
+        const end = new Date(now.getFullYear(), now.getMonth(), 0);
+        document.getElementById('startDate').value = formatDateForInput(start);
+        document.getElementById('endDate').value = formatDateForInput(end);
+        showLoader();
+        await applyDateFilter();
+        hideLoader();
+    });
+    document.getElementById('quickFilterCurrentYear').addEventListener('click', async function() {
+        const now = new Date();
+        const start = new Date(now.getFullYear(), 0, 1);
+        const end = new Date(now.getFullYear(), 11, 31);
+        document.getElementById('startDate').value = formatDateForInput(start);
+        document.getElementById('endDate').value = formatDateForInput(end);
+        showLoader();
         await applyDateFilter();
         hideLoader();
     });
@@ -206,6 +241,13 @@ async function updateSummaryCards() {
             return isCreditCard ? sum : sum + parseFloat(balance.balance || 0);
         }, 0);
         
+        // Calculate Credit Limit Used (sum of balances for credit card accounts)
+        const totalCreditUsed = balanceData.reduce((sum, balance) => {
+            const account = dropdownData.PaymentSubType?.find(a => a.Value === balance.accountId);
+            const isCreditCard = account && account.PaymentType === 3;
+            return isCreditCard ? sum + parseFloat(balance.balance || 0) : sum;
+        }, 0);
+        
         // Calculate borrow/lent balance
         const openBorrowLent = borrowLent.filter(item => item.status === 'Open');
         const borrowTotal = openBorrowLent
@@ -216,12 +258,17 @@ async function updateSummaryCards() {
             .reduce((sum, item) => sum + item.amount, 0);
         const borrowLentBalance = lentTotal - borrowTotal;
         
+        // Calculate Net Balance
+        const netBalance = totalBankBalance + borrowLentBalance - totalCreditUsed;
+        
         // Update cards
         document.getElementById('current-balance').textContent = `₹ ${totalBankBalance.toFixed(2)}`;
         document.getElementById('filtered-expense').textContent = `₹ ${totalExpenses.toFixed(2)}`;
         document.getElementById('filtered-income').textContent = `₹ ${totalIncome.toFixed(2)}`;
         document.getElementById('borrow-lent-balance').textContent = `₹ ${borrowLentBalance.toFixed(2)}`;
         document.getElementById('borrow-lent-details').textContent = `${openBorrowLent.length}`;
+        document.getElementById('credit-limit-used').textContent = `₹ ${totalCreditUsed.toFixed(2)}`;
+        document.getElementById('net-balance').textContent = `₹ ${netBalance.toFixed(2)}`;
     } catch (error) {
         console.error('Error updating summary cards:', error);
         // Fallback to simple calculation if balance data fails
@@ -232,6 +279,8 @@ async function updateSummaryCards() {
         document.getElementById('current-balance').textContent = `₹ ${currentBalance.toFixed(2)}`;
         document.getElementById('filtered-expense').textContent = `₹ ${totalExpenses.toFixed(2)}`;
         document.getElementById('filtered-income').textContent = `₹ ${totalIncome.toFixed(2)}`;
+        document.getElementById('credit-limit-used').textContent = `₹ 0.00`;
+        document.getElementById('net-balance').textContent = `₹ 0.00`;
     }
 }
 
@@ -878,15 +927,90 @@ async function openEditBorrowLentModal(borrowLentId) {
             return;
         }
 
-        // For now, show a simple alert with edit info
-        // In a full implementation, you would create a modal similar to the transaction edit modal
-        toastr.info('Edit functionality for Borrow/Lent will be implemented in the next update');
-        
+        // Populate modal fields
+        document.getElementById('editBorrowLentId').value = borrowLentRecord.id;
+        document.getElementById('editBorrowLentType').value = borrowLentRecord.type;
+        document.getElementById('editBorrowLentPerson').value = borrowLentRecord.person;
+        document.getElementById('editBorrowLentAmount').value = borrowLentRecord.amount;
+        document.getElementById('editBorrowLentDescription').value = borrowLentRecord.description;
+        document.getElementById('editBorrowLentDate').value = borrowLentRecord.date;
+        document.getElementById('editBorrowLentDueDate').value = borrowLentRecord.dueDate;
+        document.getElementById('editBorrowLentStatus').value = borrowLentRecord.status;
+        document.getElementById('editBorrowLentReturnedDate').value = borrowLentRecord.returnedDate || '';
+        document.getElementById('editBorrowLentUpdateBalance').checked = true;
+
+        // Populate account dropdown
+        const accountSelect = document.getElementById('editBorrowLentAccount');
+        accountSelect.innerHTML = '<option value="">Select Account</option>';
+        if (dropdownData.PaymentSubType) {
+            dropdownData.PaymentSubType.forEach(account => {
+                const option = document.createElement('option');
+                option.value = account.Value;
+                option.text = account.Text;
+                if (borrowLentRecord.accountId && account.Value == borrowLentRecord.accountId) {
+                    option.selected = true;
+                }
+                accountSelect.appendChild(option);
+            });
+        }
+
+        // Show modal
+        const modal = new bootstrap.Modal(document.getElementById('editBorrowLentModal'));
+        modal.show();
     } catch (error) {
         console.error('Error opening edit borrow/lent modal:', error);
         toastr.error('Failed to open edit modal');
     }
 }
+
+// Save Borrow/Lent changes
+$(document).on('click', '#saveBorrowLentBtn', async function() {
+    try {
+        const borrowLentId = document.getElementById('editBorrowLentId').value;
+        const type = document.getElementById('editBorrowLentType').value;
+        const person = document.getElementById('editBorrowLentPerson').value;
+        const amount = parseFloat(document.getElementById('editBorrowLentAmount').value);
+        const description = document.getElementById('editBorrowLentDescription').value;
+        const date = document.getElementById('editBorrowLentDate').value;
+        const dueDate = document.getElementById('editBorrowLentDueDate').value;
+        const status = document.getElementById('editBorrowLentStatus').value;
+        const returnedDate = document.getElementById('editBorrowLentReturnedDate').value;
+        const accountId = document.getElementById('editBorrowLentAccount').value;
+        const updateBalance = document.getElementById('editBorrowLentUpdateBalance').checked;
+
+        if (!type || !person || !amount || !description || !date || !dueDate || !status || !accountId) {
+            toastr.warning('Please fill all required fields.');
+            return;
+        }
+
+        const borrowLentData = {
+            borrowLentType: type,
+            person: person,
+            amount: amount,
+            description: description,
+            date: date,
+            dueDate: dueDate,
+            status: status,
+            returnedDate: returnedDate || null,
+            accountId: accountId,
+            updateBalance: updateBalance.toString()
+        };
+
+        await updateBorrowLent(borrowLentId, borrowLentData);
+        toastr.success('Borrow/Lent record updated successfully!');
+
+        // Close modal and refresh data
+        const modal = bootstrap.Modal.getInstance(document.getElementById('editBorrowLentModal'));
+        modal.hide();
+
+        await loadAllData();
+        updateBorrowLentTable();
+        updateSummaryCards();
+    } catch (error) {
+        console.error('Error saving borrow/lent:', error);
+        toastr.error('Failed to save borrow/lent record. Please try again.');
+    }
+});
 
 // Open delete borrow/lent modal
 function openDeleteBorrowLentModal(borrowLentId) {
