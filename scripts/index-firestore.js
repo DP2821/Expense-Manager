@@ -288,13 +288,23 @@ async function InsertIncome() {
                 updateBalance: 'true'
             };
 
-            await addIncome(incomeData);
+            const result = await addIncome(incomeData);
+            console.log(result);
 
-            if (typeof toastr !== 'undefined') {
-                toastr.success('Income data inserted successfully! Account balance updated.');
+            if (result.id) {
+                if (typeof toastr !== 'undefined') {
+                    toastr.success('Income data inserted successfully! Account balance updated.');
+                } else {
+                    alert('Income data inserted successfully! Account balance updated.');
+                }
             } else {
-                alert('Income data inserted successfully! Account balance updated.');
+                    if (typeof toastr !== 'undefined') {
+                        toastr.error('Error: ' + result.message);
+                    } else {
+                        alert('Error: ' + result.message);
+                    }
             }
+
             
             $("#IncomeAmount").val('');
             $("#IncomeDescription").val('');
