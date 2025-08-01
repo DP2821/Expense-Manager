@@ -103,7 +103,7 @@ function loadAccountBalance(accountId) {
     if (accountBalance) {
         $('#balanceAmount').val(accountBalance.balance || 0);
         $('#creditLimit').val(accountBalance.creditLimit || 0);
-        $('#lastUpdated').val(accountBalance.lastUpdated || getCurrentDate());
+        $('#lastUpdated').val(formatDateFromFirestore(accountBalance.lastUpdated) || getCurrentDate());
     } else {
         $('#balanceAmount').val('');
         $('#creditLimit').val('');
@@ -139,7 +139,7 @@ function loadBalanceTable() {
                     <td>${balanceDisplay}</td>
                     <td>${isCreditCard ? '₹ ' + Number(balance.creditLimit || 0).toLocaleString(undefined, {minimumFractionDigits: 2}) : '-'}</td>
                     <td class="${available < 0 ? 'text-danger' : 'text-success'}">₹ ${Number(available).toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
-                    <td>${balance.lastUpdated || 'Not set'}</td>
+                    <td>${formatDateFromFirestore(balance.lastUpdated) || 'Not set'}</td>
                     <td>
                         <button class="btn btn-sm btn-outline-primary" onclick="editBalance(${balance.accountId})">
                             <span class="material-icons" style="font-size: 16px;">edit</span>
@@ -200,7 +200,7 @@ async function saveBalance() {
     showLoader();
     
     try {
-        const userId = getUserId();
+        const userId = await getUserId();
         const balanceData = {
             userId,
             accountId: parseInt(accountId),
@@ -344,3 +344,16 @@ function showLoader() {
 function hideLoader() {
     $("#globalLoader").fadeOut();
 } 
+
+function formatDateFromFirestore(date) {
+    // If it's a Firestore Timestamp object
+    if (date && typeof date.toDate === 'function') {
+        const d = date.toDate();
+        const year = d.getFullYear();
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    }
+    // If it's already a string, return as is
+    return date || '';
+}
