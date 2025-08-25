@@ -674,12 +674,9 @@ export async function calculateCurrentBalance() {
 
 // Add balance
 export async function addBalance(balanceData) {
-  const userId = await getCurrentUserId();
-
   try {
     const docRef = await addDoc(collection(db, COLLECTIONS.BALANCE), {
       ...balanceData,
-      userId,
       createdAt: serverTimestamp(),
     });
 
@@ -883,6 +880,19 @@ export async function searchTransactions(searchTerm, startDate = null, endDate =
   const userId = await getCurrentUserId();
 
   try {
+    // Get all categories for mapping id -> name
+    const categoriesSnapshot = await getDocs(
+      query(
+        collection(db, COLLECTIONS.CATEGORIES),
+        where("userId", "==", userId)
+      )
+    );
+    const categoryMap = {};
+    categoriesSnapshot.docs.forEach(doc => {
+      const data = doc.data();
+      categoryMap[data.id] = data.name.toLowerCase();
+    });
+
     // Get expenses and income
     let expensesQuery = query(
       collection(db, COLLECTIONS.EXPENSES),
@@ -920,20 +930,24 @@ export async function searchTransactions(searchTerm, startDate = null, endDate =
       getDocs(incomeQuery)
     ]);
 
-    // Filter by search term
+    // Filter by search term (description, amount, category name)
     const searchLower = searchTerm.toLowerCase();
     const filteredExpenses = expensesSnapshot.docs
       .map(doc => ({ id: doc.id, ...doc.data() }))
-      .filter(expense => 
-        expense.description.toLowerCase().includes(searchLower) ||
-        expense.amount.toString().includes(searchTerm)
-      );
+      .filter(expense => {
+        const categoryName = categoryMap[expense.categoryId] || "";
+        return (
+          (expense.description && expense.description.toLowerCase().includes(searchLower)) ||
+          (expense.amount && expense.amount.toString().includes(searchTerm)) ||
+          (categoryName && categoryName.includes(searchLower))
+        );
+      });
 
     const filteredIncome = incomeSnapshot.docs
       .map(doc => ({ id: doc.id, ...doc.data() }))
       .filter(income => 
-        income.description.toLowerCase().includes(searchLower) ||
-        income.amount.toString().includes(searchTerm)
+        (income.description && income.description.toLowerCase().includes(searchLower)) ||
+        (income.amount && income.amount.toString().includes(searchTerm))
       );
 
     return {
