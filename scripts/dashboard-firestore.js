@@ -397,7 +397,7 @@ function updateSpendingInsights() {
     
     const topCategories = Object.entries(categorySpending)
         .sort(([,a], [,b]) => b - a)
-        .slice(0, 3);
+        // .slice(0, 3);
     
     const topCategoriesHtml = topCategories.map(([category, amount]) => `
         <div class="d-flex justify-content-between align-items-center mb-2">
@@ -417,16 +417,16 @@ function updateSpendingInsights() {
     }
     
     // Largest transaction
-    const allTransactions = [...expenses, ...income];
-    if (allTransactions.length > 0) {
-        const largest = allTransactions.reduce((max, transaction) => 
+    // const allTransactions = [...expenses, ...income];
+    if (expenses.length > 0) {
+        const largest = expenses.reduce((max, transaction) => 
             transaction.amount > max.amount ? transaction : max
         );
         document.getElementById('largest-transaction').textContent = `₹ ${largest.amount.toFixed(2)}`;
     }
     
     // Transaction count
-    document.getElementById('transaction-count').textContent = allTransactions.length;
+    document.getElementById('transaction-count').textContent = expenses.length;
 }
 
 function initializeCharts() {
