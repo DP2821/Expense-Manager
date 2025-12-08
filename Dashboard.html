@@ -1,21 +1,26 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - Expense Manager</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet"
+        crossorigin="anonymous">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <!-- jQuery first, then Toastr -->
-    <script src="https://code.jquery.com/jquery-3.7.0.min.js" integrity="sha256-2Pmvv0kuTBOenSvLm6bvfBSSHrUJ+3A7x6P5Ebd07/g=" crossorigin="anonymous"></script>
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"
+        integrity="sha256-2Pmvv0kuTBOenSvLm6bvfBSSHrUJ+3A7x6P5Ebd07/g=" crossorigin="anonymous"></script>
     <!-- Toastr CSS and JS for toast notifications -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"
+        crossorigin="anonymous"></script>
     <link rel="stylesheet" href="styles/dashboard.css">
     <link rel="stylesheet" href="styles/gradient-theme.css">
 </head>
+
 <body>
     <!-- Bootstrap Navbar -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
@@ -38,12 +43,7 @@
                     </li>
                     <li class="nav-item">
                         <a class="btn btn-gradient-warning mx-1 nav-link-btn" href="Index.html">
-                            <span class="material-icons align-middle">add_circle</span> Add Expense
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="btn btn-gradient-success mx-1 nav-link-btn" href="Index.html#add-income-tab">
-                            <span class="material-icons align-middle">attach_money</span> Add Income
+                            <span class="material-icons align-middle">add_circle</span> Add Transaction
                         </a>
                     </li>
                     <li class="nav-item">
@@ -52,16 +52,21 @@
                         </a>
                     </li>
                     <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="userDropdown"
+                            role="button" data-bs-toggle="dropdown" aria-expanded="false">
                             <span class="material-icons me-2">account_circle</span>
                             <span id="userName">Loading...</span>
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
-                            <li><h6 class="dropdown-header" id="userEmail">Loading...</h6></li>
-                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <h6 class="dropdown-header" id="userEmail">Loading...</h6>
+                            </li>
+                            <li>
+                                <hr class="dropdown-divider">
+                            </li>
                             <li><a class="dropdown-item" href="#" id="logoutBtn">
-                                <span class="material-icons align-middle me-2">logout</span>Logout
-                            </a></li>
+                                    <span class="material-icons align-middle me-2">logout</span>Logout
+                                </a></li>
                         </ul>
                     </li>
                 </ul>
@@ -94,15 +99,18 @@
                                         <span class="material-icons align-middle">refresh</span> Reset
                                     </button>
                                     <!-- Redesigned Quick Filter Buttons -->
-                                    <button class="btn btn-gradient-info btn-sm d-flex align-items-center px-3" id="quickFilterCurrentMonth" title="Current Month">
+                                    <button class="btn btn-gradient-info btn-sm d-flex align-items-center px-3"
+                                        id="quickFilterCurrentMonth" title="Current Month">
                                         <span class="material-icons me-1" style="font-size:18px;">calendar_month</span>
                                         <span>Current Month</span>
                                     </button>
-                                    <button class="btn btn-gradient-warning btn-sm d-flex align-items-center px-3" id="quickFilterPreviousMonth" title="Previous Month">
+                                    <button class="btn btn-gradient-warning btn-sm d-flex align-items-center px-3"
+                                        id="quickFilterPreviousMonth" title="Previous Month">
                                         <span class="material-icons me-1" style="font-size:18px;">history</span>
                                         <span>Previous Month</span>
                                     </button>
-                                    <button class="btn btn-gradient-success btn-sm d-flex align-items-center px-3" id="quickFilterCurrentYear" title="Current Year">
+                                    <button class="btn btn-gradient-success btn-sm d-flex align-items-center px-3"
+                                        id="quickFilterCurrentYear" title="Current Year">
                                         <span class="material-icons me-1" style="font-size:18px;">event</span>
                                         <span>Current Year</span>
                                     </button>
@@ -119,7 +127,8 @@
             <div class="col-md-3 d-none">
                 <div class="card text-center shadow-sm summary-card">
                     <div class="card-body">
-                        <span class="material-icons" style="font-size:2.5rem;color:#1976d2;">account_balance_wallet</span>
+                        <span class="material-icons"
+                            style="font-size:2.5rem;color:#1976d2;">account_balance_wallet</span>
                         <h5 class="card-title mt-2">Current Balance</h5>
                         <h3 class="fw-bold" id="current-balance">₹ 0.00</h3>
                     </div>
@@ -157,7 +166,8 @@
                 <div class="card text-center shadow-sm summary-card">
                     <div class="card-body">
                         <span class="material-icons" style="font-size:2.5rem;color:#ff9800;">swap_horiz</span>
-                        <h5 class="card-title mt-2">Borrow/Lent Balance (<small class="text-muted" id="borrow-lent-details">0</small>)</h5>
+                        <h5 class="card-title mt-2">Borrow/Lent Balance (<small class="text-muted"
+                                id="borrow-lent-details">0</small>)</h5>
                         <h3 class="fw-bold" id="borrow-lent-balance">₹ 0.00</h3>
                     </div>
                 </div>
@@ -184,7 +194,8 @@
                     <div class="card-body">
                         <div class="chart-container">
                             <canvas id="categoryChart"></canvas>
-                            <div id="categoryChartLoading" class="text-center text-muted" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">
+                            <div id="categoryChartLoading" class="text-center text-muted"
+                                style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">
                                 <span class="material-icons" style="font-size: 2rem;">pie_chart</span>
                                 <div>Loading category data...</div>
                             </div>
@@ -200,7 +211,8 @@
                     <div class="card-body">
                         <div class="chart-container">
                             <canvas id="monthlyTrendChart"></canvas>
-                            <div id="monthlyTrendChartLoading" class="text-center text-muted" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">
+                            <div id="monthlyTrendChartLoading" class="text-center text-muted"
+                                style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);">
                                 <span class="material-icons" style="font-size: 2rem;">trending_up</span>
                                 <div>Loading trend data...</div>
                             </div>
@@ -220,7 +232,8 @@
                                 <span class="material-icons align-middle">history</span> Recent Transactions
                             </div>
                             <div class="d-flex gap-2">
-                                <input type="text" class="form-control form-control-sm" id="transactionSearch" placeholder="Search by description or amount..." style="width: 250px;">
+                                <input type="text" class="form-control form-control-sm" id="transactionSearch"
+                                    placeholder="Search by description or amount..." style="width: 250px;">
                                 <button class="btn btn-light btn-sm" id="clearSearch">
                                     <span class="material-icons">clear</span>
                                 </button>
@@ -315,7 +328,8 @@
     </div>
 
     <!-- Edit Transaction Modal -->
-    <div class="modal fade" id="editTransactionModal" tabindex="-1" aria-labelledby="editTransactionModalLabel" aria-hidden="true">
+    <div class="modal fade" id="editTransactionModal" tabindex="-1" aria-labelledby="editTransactionModalLabel"
+        aria-hidden="true">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
@@ -326,7 +340,7 @@
                     <form id="editTransactionForm">
                         <input type="hidden" id="editTransactionId">
                         <input type="hidden" id="editTransactionType">
-                        
+
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="mb-3">
@@ -341,12 +355,12 @@
                                 </div>
                             </div>
                         </div>
-                        
+
                         <div class="mb-3">
                             <label for="editDescription" class="form-label">Description *</label>
                             <input type="text" class="form-control" id="editDescription" required>
                         </div>
-                        
+
                         <!-- Expense-specific fields -->
                         <div id="expenseFields" style="display: none;">
                             <div class="row">
@@ -386,7 +400,7 @@
                                 </div>
                             </div>
                         </div>
-                        
+
                         <!-- Income-specific fields -->
                         <div id="incomeFields" style="display: none;">
                             <div class="row">
@@ -408,7 +422,7 @@
                                 </div>
                             </div>
                         </div>
-                        
+
                         <div class="mb-3">
                             <div class="form-check">
                                 <input class="form-check-input" type="checkbox" id="editUpdateBalance" checked>
@@ -428,7 +442,8 @@
     </div>
 
     <!-- Edit Borrow/Lent Modal -->
-    <div class="modal fade" id="editBorrowLentModal" tabindex="-1" aria-labelledby="editBorrowLentModalLabel" aria-hidden="true">
+    <div class="modal fade" id="editBorrowLentModal" tabindex="-1" aria-labelledby="editBorrowLentModalLabel"
+        aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
@@ -484,7 +499,8 @@
                         </div>
                         <div class="mb-3">
                             <div class="form-check">
-                                <input class="form-check-input" type="checkbox" id="editBorrowLentUpdateBalance" checked>
+                                <input class="form-check-input" type="checkbox" id="editBorrowLentUpdateBalance"
+                                    checked>
                                 <label class="form-check-label" for="editBorrowLentUpdateBalance">
                                     Update account balance
                                 </label>
@@ -502,7 +518,8 @@
     <!-- End Edit Borrow/Lent Modal -->
 
     <!-- Delete Confirmation Modal -->
-    <div class="modal fade" id="deleteTransactionModal" tabindex="-1" aria-labelledby="deleteTransactionModalLabel" aria-hidden="true">
+    <div class="modal fade" id="deleteTransactionModal" tabindex="-1" aria-labelledby="deleteTransactionModalLabel"
+        aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
@@ -531,48 +548,50 @@
         <div class="loader"></div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
-    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"
+        crossorigin="anonymous"></script>
+
     <script>
-    // Configure Toastr
-    toastr.options = {
-        "closeButton": true,
-        "debug": false,
-        "newestOnTop": true,
-        "progressBar": true,
-        "positionClass": "toast-top-right",
-        "preventDuplicates": false,
-        "onclick": null,
-        "showDuration": "300",
-        "hideDuration": "1000",
-        "timeOut": "5000",
-        "extendedTimeOut": "1000",
-        "showEasing": "swing",
-        "hideEasing": "linear",
-        "showMethod": "fadeIn",
-        "hideMethod": "fadeOut"
-    };
+        // Configure Toastr
+        toastr.options = {
+            "closeButton": true,
+            "debug": false,
+            "newestOnTop": true,
+            "progressBar": true,
+            "positionClass": "toast-top-right",
+            "preventDuplicates": false,
+            "onclick": null,
+            "showDuration": "300",
+            "hideDuration": "1000",
+            "timeOut": "5000",
+            "extendedTimeOut": "1000",
+            "showEasing": "swing",
+            "hideEasing": "linear",
+            "showMethod": "fadeIn",
+            "hideMethod": "fadeOut"
+        };
     </script>
-    
+
     <!-- Firebase Authentication Guard -->
     <script type="module" src="scripts/auth-guard.js"></script>
-    
+
     <!-- Auth Helper -->
     <script type="module" src="scripts/auth-helper.js"></script>
-    
+
     <!-- Firestore-based Dashboard Script -->
     <script type="module" src="scripts/dashboard-firestore.js"></script>
 
     <script>
-    // Navbar toggle close on mobile
-    $(function() {
-        $('.nav-link-btn').on('click', function() {
-            var navbarCollapse = $('.navbar-collapse');
-            if (navbarCollapse.hasClass('show')) {
-                navbarCollapse.collapse('hide');
-            }
+        // Navbar toggle close on mobile
+        $(function () {
+            $('.nav-link-btn').on('click', function () {
+                var navbarCollapse = $('.navbar-collapse');
+                if (navbarCollapse.hasClass('show')) {
+                    navbarCollapse.collapse('hide');
+                }
+            });
         });
-    });
     </script>
 </body>
-</html> 
+
+</html>

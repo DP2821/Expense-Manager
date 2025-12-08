@@ -14,11 +14,78 @@
     <!-- Toastr CSS and JS for toast notifications -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script>
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    </script>
     <title>Expense Manager</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet"
+        crossorigin="anonymous">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <link rel="stylesheet" href="styles/index.css">
     <link rel="stylesheet" href="styles/gradient-theme.css">
+    <style>
+        /* Enhanced Pending Transaction Styles */
+        .pending-transaction-item {
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: 1px solid #e9ecef;
+            border-radius: 8px !important;
+            margin-bottom: 8px;
+            background: #fff;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+        }
+
+        .pending-transaction-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
+            background-color: #fff;
+            border-color: #dee2e6;
+        }
+
+        .pending-transaction-item.active {
+            background-color: #f0f7ff;
+            border-color: #cfe2ff;
+        }
+
+        .pending-list-container {
+            max-height: 350px;
+            overflow-y: auto;
+            padding: 4px;
+        }
+
+        .upload-area {
+            border: 2px dashed #dee2e6;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+            background: #f8f9fa;
+            transition: border-color 0.2s;
+        }
+
+        .upload-area:hover {
+            border-color: #adb5bd;
+            background: #f1f3f5;
+        }
+
+        /* Custom scrollbar for the list */
+        .pending-list-container::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .pending-list-container::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+
+        .pending-list-container::-webkit-scrollbar-thumb {
+            background: #ccc;
+            border-radius: 4px;
+        }
+
+        .pending-list-container::-webkit-scrollbar-thumb:hover {
+            background: #aaa;
+        }
+    </style>
 </head>
 
 <body>
@@ -41,26 +108,26 @@
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="btn btn-gradient-success mx-1 nav-link-btn" href="Index.html#add-income-tab">
-                            <span class="material-icons align-middle">attach_money</span> Add Income
-                        </a>
-                    </li>
-                    <li class="nav-item">
                         <a class="btn btn-gradient-info mx-1 nav-link-btn" href="Balance.html">
                             <span class="material-icons align-middle">account_balance</span> Balance
                         </a>
                     </li>
                     <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="userDropdown"
+                            role="button" data-bs-toggle="dropdown" aria-expanded="false">
                             <span class="material-icons me-2">account_circle</span>
                             <span id="userName">Loading...</span>
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
-                            <li><h6 class="dropdown-header" id="userEmail">Loading...</h6></li>
-                            <li><hr class="dropdown-divider"></li>
+                            <li>
+                                <h6 class="dropdown-header" id="userEmail">Loading...</h6>
+                            </li>
+                            <li>
+                                <hr class="dropdown-divider">
+                            </li>
                             <li><a class="dropdown-item" href="#" id="logoutBtn">
-                                <span class="material-icons align-middle me-2">logout</span>Logout
-                            </a></li>
+                                    <span class="material-icons align-middle me-2">logout</span>Logout
+                                </a></li>
                         </ul>
                     </li>
                 </ul>
@@ -68,153 +135,210 @@
         </div>
     </nav>
     <div class="container mt-4">
-        <ul class="nav nav-tabs" id="expenseIncomeTabs" role="tablist">
-            <li class="nav-item" role="presentation">
-                <button class="nav-link active" id="add-expense-tab" data-bs-toggle="tab" data-bs-target="#add-expense" type="button" role="tab" aria-controls="add-expense" aria-selected="true">Add Expense</button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="add-income-tab" data-bs-toggle="tab" data-bs-target="#add-income" type="button" role="tab" aria-controls="add-income" aria-selected="false">Add Income</button>
-            </li>
-            <li class="nav-item" role="presentation">
-                <button class="nav-link" id="borrow-lent-tab" data-bs-toggle="tab" data-bs-target="#borrow-lent" type="button" role="tab" aria-controls="borrow-lent" aria-selected="false">Borrow/Lent</button>
-            </li>
-        </ul>
+        <!-- Tabs Removed -->
         <div class="tab-content" id="expenseIncomeTabsContent">
-            <div class="tab-pane fade show active" id="add-expense" role="tabpanel" aria-labelledby="add-expense-tab">
-                <div class="container">
-                    <div class="mx-auto" style="max-width: 500px;">
-                        <div class="card my-4 chart-card">
-                            <div class="card-header text-center card-gradient-primary">
-                                <h5 class="card-title">Expense Details</h5>
-                            </div>
-                            <div class="card-body">
-                                <div class="mb-3">
-                                    <input class="form-control" type="number" name="amount" id="Amount" placeholder="Amount"
-                                        required tabindex="1">
-                                </div>
-                                <div class="mb-3">
-                                    <input class="form-control" type="text" name="description" id="Description"
-                                        placeholder="Description" required tabindex="2">
-                                </div>
-                                <div class="mb-3">
-                                    <select class="form-select" id="PaymentType" required tabindex="3"></select>
-                                </div>
-                                <div class="mb-3">
-                                    <select class="form-select" id="PaymentSubType" required tabindex="4"></select>
-                                </div>
-                                <div class="mb-3">
-                                    <select class="form-select" id="Category" required tabindex="5"></select>
-                                </div>
-                                <div class="mb-3">
-                                    <select class="form-select" id="SubCategory" required tabindex="6"></select>
-                                </div>
-                                <div class="mb-3">
-                                    <input class="form-control" type="date" name="payment-date" id="PaymentDate" required
-                                        tabindex="8">
-                                </div>
-                                <button class="btn btn-gradient-primary w-100" type="submit" id="SaveExpense" tabindex="7">Save</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="tab-pane fade" id="add-income" role="tabpanel" aria-labelledby="add-income-tab">
-                <div class="mx-auto" style="max-width: 500px;">
-                    <div class="card my-4 chart-card">
-                        <div class="card-header text-center card-gradient-success">
-                            <h5 class="card-title">Add Income</h5>
-                        </div>
-                        <div class="card-body">
-                            <form id="income-form">
-                                <div class="mb-3">
-                                    <input class="form-control" type="number" name="income-amount" id="IncomeAmount" placeholder="Amount" required tabindex="1">
-                                </div>
-                                <div class="mb-3">
-                                    <input class="form-control" type="text" name="income-description" id="IncomeDescription" placeholder="Description" required tabindex="2">
-                                </div>
-                                <div class="mb-3">
-                                    <select class="form-select" id="IncomeCategory" required tabindex="3">
-                                        <option value="" disabled selected>Select Income Source</option>
-                                    </select>
-                                </div>
-                                <div class="mb-3">
-                                    <select class="form-select" id="IncomeAccount" required tabindex="4">
-                                        <option value="" disabled selected>Select Account</option>
-                                    </select>
-                                </div>
-                                <div class="mb-3">
-                                    <input class="form-control" type="date" name="income-date" id="IncomeDate" required tabindex="5">
-                                </div>
-                                <button class="btn btn-gradient-success w-100" type="button" id="SaveIncome" tabindex="6">Save</button>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="tab-pane fade" id="borrow-lent" role="tabpanel" aria-labelledby="borrow-lent-tab">
-                <div class="mx-auto" style="max-width: 500px;">
-                    <div class="card my-4 chart-card">
-                        <div class="card-header text-center card-gradient-info">
-                            <h5 class="card-title">Borrow / Lent</h5>
-                        </div>
-                        <div class="card-body">
-                            <form id="borrow-lent-form">
-                                <div class="mb-3">
-                                    <label for="BorrowLentType" class="form-label">Type</label>
-                                    <select class="form-select" id="BorrowLentType" required tabindex="1">
-                                        <option value="" disabled selected>Select Type</option>
-                                        <option value="Borrow">Borrow</option>
-                                        <option value="Lent">Lent</option>
-                                    </select>
-                                </div>
-                                <div class="mb-3">
-                                    <input class="form-control" type="text" name="person" id="BorrowLentPerson" placeholder="Person" required tabindex="2">
-                                </div>
-                                <div class="mb-3">
-                                    <input class="form-control" type="number" name="amount" id="BorrowLentAmount" placeholder="Amount" required tabindex="3">
-                                </div>
-                                <div class="mb-3">
-                                    <select class="form-select" id="BorrowLentAccount" required tabindex="4">
-                                        <option value="" disabled selected>Select Account</option>
-                                    </select>
-                                </div>
-                                <div class="mb-3">
-                                    <input class="form-control" type="text" name="description" id="BorrowLentDescription" placeholder="Description" required tabindex="5">
-                                </div>
-                                <div class="mb-3">
-                                    <label for="BorrowLentDate" class="form-label">Borrow/Lent Date</label>
-                                    <input class="form-control" type="date" name="date" id="BorrowLentDate" required tabindex="6">
-                                </div>
-                                <div class="mb-3">
-                                    <label for="BorrowLentDueDate" class="form-label">Borrow/Lent Due Date</label>
-                                    <input class="form-control" type="date" name="due-date" id="BorrowLentDueDate" placeholder="Due Date" required tabindex="7">
-                                </div>
-                                <div class="mb-3">
-                                    <label for="BorrowLentStatus" class="form-label">Status</label>
-                                    <select class="form-select" id="BorrowLentStatus" required tabindex="8">
-                                        <option value="Open" selected>Open</option>
-                                        <option value="Closed">Closed</option>
-                                    </select>
-                                </div>
-                                <div class="mb-3">
-                                    <label for="BorrowLentReturnedDate" class="form-label">Borrow/Lent Returned Date</label>
-                                    <input class="form-control" type="date" name="returned-date" id="BorrowLentReturnedDate" placeholder="Returned Date (if closed)" tabindex="9">
-                                </div>
-                                <div class="mb-3">
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox" id="BorrowLentUpdateBalance" checked>
-                                        <label class="form-check-label" for="BorrowLentUpdateBalance">
-                                            Update account balance
-                                        </label>
+            <div class="tab-content" id="expenseIncomeTabsContent">
+                <div class="tab-pane fade show active" id="add-expense" role="tabpanel"
+                    aria-labelledby="add-expense-tab">
+                    <div class="container">
+                        <div class="row g-4 justify-content-center">
+                            <!-- Left Column: Quick Add -->
+                            <div class="col-12 col-lg-6">
+                                <div class="card h-100 shadow-sm border-0">
+                                    <div class="card-body">
+                                        <h6 class="card-subtitle mb-3 text-muted fw-bold">Quick Add from Statement</h6>
+                                        <div class="mb-3 upload-area">
+                                            <span class="material-icons text-primary"
+                                                style="font-size: 48px;">cloud_upload</span>
+                                            <p class="mb-2 mt-2 text-muted small">Drag and drop or click to upload</p>
+                                            <label for="statementUpload" class="btn btn-sm btn-gradient-primary">
+                                                Choose PhonePe PDF
+                                            </label>
+                                            <input class="d-none" type="file" id="statementUpload" accept=".pdf">
+                                            <div id="fileNameDisplay" class="mt-2 small text-success fw-bold"></div>
+                                        </div>
+                                        <div id="pendingTransactionsArea" class="d-none">
+                                            <div
+                                                class="d-flex justify-content-between align-items-center border-bottom pb-2 mb-2">
+                                                <h6 class="mb-0 text-primary">Pending <span id="pendingCount"
+                                                        class="badge bg-primary rounded-pill ms-1">0</span></h6>
+                                                <button class="btn btn-sm btn-link text-danger text-decoration-none p-0"
+                                                    id="clearPendingBtn" style="font-size: 0.85rem;">
+                                                    <span class="material-icons align-middle"
+                                                        style="font-size: 16px;">delete_sweep</span> Clear
+                                                </button>
+                                            </div>
+                                            <div class="list-group pending-list-container" id="pendingTransactionsList"
+                                                style="max-height: 480px;">
+                                                <!-- Items will be added here -->
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
-                                <button class="btn btn-gradient-info w-100" type="submit" id="SaveBorrowLent" tabindex="10">Save</button>
-                            </form>
+                            </div>
+
+                            <!-- Right Column: Unified Transaction Form -->
+                            <div class="col-12 col-lg-6">
+                                <div class="card h-100 shadow-sm border-0 chart-card">
+                                    <div class="card-header text-center card-gradient-primary text-white py-3">
+                                        <h5 class="card-title mb-0">Transaction Details</h5>
+                                    </div>
+                                    <div class="card-body p-4">
+                                        <div class="mb-3">
+                                            <label for="TransactionType" class="form-label small text-muted">Transaction
+                                                Type</label>
+                                            <select class="form-select bg-light border-0 fw-bold text-primary"
+                                                id="TransactionType" tabindex="0">
+                                                <option value="Expense" selected>Expense</option>
+                                                <option value="Income">Income</option>
+                                                <option value="BorrowLent">Borrow / Lent</option>
+                                            </select>
+                                        </div>
+
+                                        <hr class="my-4 text-muted">
+
+                                        <!-- Shared Fields -->
+                                        <div class="mb-3">
+                                            <label for="GenericAmount"
+                                                class="form-label small text-muted">Amount</label>
+                                            <div class="input-group">
+                                                <span class="input-group-text bg-light border-end-0">₹</span>
+                                                <input class="form-control border-start-0 ps-0" type="number"
+                                                    id="GenericAmount" placeholder="0.00" required tabindex="1">
+                                            </div>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="GenericDescription"
+                                                class="form-label small text-muted">Description</label>
+                                            <input class="form-control" type="text" id="GenericDescription"
+                                                placeholder="What is this for?" required tabindex="2">
+                                        </div>
+
+                                        <!-- Expense Fields -->
+                                        <div id="ExpenseFields">
+                                            <div class="row">
+                                                <div class="col-md-6 mb-3">
+                                                    <label for="PaymentType" class="form-label small text-muted">Payment
+                                                        Type</label>
+                                                    <select class="form-select" id="PaymentType" tabindex="3"></select>
+                                                </div>
+                                                <div class="col-md-6 mb-3">
+                                                    <label for="PaymentSubType"
+                                                        class="form-label small text-muted">Account/Wallet</label>
+                                                    <select class="form-select" id="PaymentSubType"
+                                                        tabindex="4"></select>
+                                                </div>
+                                            </div>
+                                            <div class="row">
+                                                <div class="col-md-6 mb-3">
+                                                    <label for="Category"
+                                                        class="form-label small text-muted">Category</label>
+                                                    <select class="form-select" id="Category" tabindex="5"></select>
+                                                </div>
+                                                <div class="col-md-6 mb-3">
+                                                    <label for="SubCategory"
+                                                        class="form-label small text-muted">Sub-Category</label>
+                                                    <select class="form-select" id="SubCategory" tabindex="6"></select>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Income Fields -->
+                                        <div id="IncomeFields" class="d-none">
+                                            <div class="mb-3">
+                                                <label for="IncomeCategory" class="form-label small text-muted">Income
+                                                    Source</label>
+                                                <select class="form-select" id="IncomeCategory" tabindex="3">
+                                                    <option value="" disabled selected>Select Income Source</option>
+                                                </select>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="IncomeAccount" class="form-label small text-muted">Deposit
+                                                    To</label>
+                                                <select class="form-select" id="IncomeAccount" tabindex="4">
+                                                    <option value="" disabled selected>Select Account</option>
+                                                </select>
+                                            </div>
+                                        </div>
+
+                                        <!-- Borrow/Lent Fields -->
+                                        <div id="BorrowLentFields" class="d-none">
+                                            <div class="mb-3">
+                                                <label for="BorrowLentType"
+                                                    class="form-label small text-muted">Action</label>
+                                                <select class="form-select" id="BorrowLentType" tabindex="3">
+                                                    <option value="" disabled selected>Select Type</option>
+                                                    <option value="Borrow">Borrow</option>
+                                                    <option value="Lent">Lent</option>
+                                                </select>
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="BorrowLentPerson"
+                                                    class="form-label small text-muted">Person</label>
+                                                <input class="form-control" type="text" id="BorrowLentPerson"
+                                                    placeholder="Name of Person" tabindex="4">
+                                            </div>
+                                            <div class="mb-3">
+                                                <label for="BorrowLentAccount"
+                                                    class="form-label small text-muted">Related
+                                                    Account</label>
+                                                <select class="form-select" id="BorrowLentAccount" tabindex="5">
+                                                    <option value="" disabled selected>Select Account</option>
+                                                </select>
+                                            </div>
+                                            <div class="row">
+                                                <div class="col-md-6 mb-3">
+                                                    <label for="BorrowLentDueDate"
+                                                        class="form-label small text-muted">Due
+                                                        Date</label>
+                                                    <input class="form-control" type="date" id="BorrowLentDueDate"
+                                                        tabindex="6">
+                                                </div>
+                                                <div class="col-md-6 mb-3">
+                                                    <label for="BorrowLentStatus"
+                                                        class="form-label small text-muted">Status</label>
+                                                    <select class="form-select" id="BorrowLentStatus" tabindex="7">
+                                                        <option value="Open" selected>Open</option>
+                                                        <option value="Closed">Closed</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div class="mb-3">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="checkbox"
+                                                        id="BorrowLentUpdateBalance" checked>
+                                                    <label class="form-check-label small text-muted"
+                                                        for="BorrowLentUpdateBalance">
+                                                        Update account balance
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="mb-4">
+                                            <label for="GenericDate" class="form-label small text-muted">Date</label>
+                                            <input class="form-control" type="date" id="GenericDate" required
+                                                tabindex="8">
+                                            <input type="hidden" id="BorrowLentReturnedDate">
+                                            <!-- Hidden placeholder -->
+                                        </div>
+
+                                        <button class="btn btn-gradient-primary w-100 py-2 shadow-sm" type="button"
+                                            id="UnifiedSaveBtn" tabindex="9">
+                                            <span class="material-icons align-middle me-2">save</span>Save
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
+        <!-- Old Tab Panes Removed -->
+    </div>
+    </div>
+    </div>
     </div>
 
     <!-- Global Loader -->
@@ -227,30 +351,30 @@
 </html>
 
 <script>
-// Configure Toastr
-toastr.options = {
-    "closeButton": true,
-    "debug": false,
-    "newestOnTop": true,
-    "progressBar": true,
-    "positionClass": "toast-top-right",
-    "preventDuplicates": false,
-    "onclick": null,
-    "showDuration": "300",
-    "hideDuration": "1000",
-    "timeOut": "5000",
-    "extendedTimeOut": "1000",
-    "showEasing": "swing",
-    "hideEasing": "linear",
-    "showMethod": "fadeIn",
-    "hideMethod": "fadeOut"
-};
+    // Configure Toastr
+    toastr.options = {
+        "closeButton": true,
+        "debug": false,
+        "newestOnTop": true,
+        "progressBar": true,
+        "positionClass": "toast-top-right",
+        "preventDuplicates": false,
+        "onclick": null,
+        "showDuration": "300",
+        "hideDuration": "1000",
+        "timeOut": "5000",
+        "extendedTimeOut": "1000",
+        "showEasing": "swing",
+        "hideEasing": "linear",
+        "showMethod": "fadeIn",
+        "hideMethod": "fadeOut"
+    };
 </script>
-    <!-- Firebase Authentication Guard -->
-    <script type="module" src="scripts/auth-guard.js"></script>
-    
-    <!-- Auth Helper -->
-    <script type="module" src="scripts/auth-helper.js"></script>
-    
-    <!-- Firestore-based Index Script -->
-    <script type="module" src="scripts/index-firestore.js"></script>
+<!-- Firebase Authentication Guard -->
+<script type="module" src="scripts/auth-guard.js"></script>
+
+<!-- Auth Helper -->
+<script type="module" src="scripts/auth-helper.js"></script>
+
+<!-- Firestore-based Index Script -->
+<script type="module" src="scripts/index-firestore.js"></script>
