@@ -5,7 +5,9 @@ import {
     addIncome,
     addBorrowLent,
     getAutoFillData,
-    initializeUserData
+    initializeUserData,
+    saveTransactionMapping,
+    getTransactionMapping
 } from './firestore-service.js';
 import { parsePhonePeStatement } from './pdf-parser.js';
 import { getUserId } from './auth-helper.js';
@@ -95,7 +97,13 @@ function setupEventListeners() {
             var description = $(this).val();
             if (description !== null && description !== undefined && description.trim() !== '') {
                 showLoader();
-                handleDescriptionAutoFill(description);
+
+                // If we are editing a pending transaction (PDF), do NOT autofill payment info
+                // because we want to keep the payment info extracted from the PDF.
+                const pendingIndex = $("#UnifiedSaveBtn").attr('data-pending-index');
+                const includePayment = (pendingIndex === undefined || pendingIndex === null || pendingIndex === "");
+
+                handleDescriptionAutoFill(description, includePayment);
             }
         }
     });
@@ -155,17 +163,19 @@ async function GetAllDropDownData() {
     }
 }
 
-async function handleDescriptionAutoFill(description) {
+async function handleDescriptionAutoFill(description, includePayment = true) {
     try {
         const data = await getAutoFillData(description);
 
         if (data && data.SubPaymentTypeId && data.SubCategoryTypeId) {
             // Find the payment type for this sub payment type
-            const subPaymentType = Global_Response.PaymentSubType.find(item => item.Value == data.SubPaymentTypeId);
-            if (subPaymentType) {
-                $("#PaymentType").val(subPaymentType.PaymentType);
-                FillPaymnetSubType($("#PaymentType").val());
-                $("#PaymentSubType").val(data.SubPaymentTypeId);
+            if (includePayment) {
+                const subPaymentType = Global_Response.PaymentSubType.find(item => item.Value == data.SubPaymentTypeId);
+                if (subPaymentType) {
+                    $("#PaymentType").val(subPaymentType.PaymentType);
+                    FillPaymnetSubType($("#PaymentType").val());
+                    $("#PaymentSubType").val(data.SubPaymentTypeId);
+                }
             }
 
             // Find the category for this sub category
@@ -298,6 +308,18 @@ async function InsertExpense() {
             // Check if we saved a pending transaction
             const pendingIndex = $("#UnifiedSaveBtn").attr('data-pending-index');
             if (pendingIndex !== undefined && pendingIndex !== null && pendingIndex !== "") {
+                const tx = pendingTransactions[parseInt(pendingIndex)];
+
+                // Save mapping (Learning)
+                if (tx && tx.description) {
+                    await saveTransactionMapping({
+                        originalDescription: tx.description, // Key
+                        mappedDescription: description,      // New Value
+                        categoryId: category,
+                        subCategoryId: subCategory
+                    });
+                }
+
                 removePendingTransaction(parseInt(pendingIndex));
                 $("#UnifiedSaveBtn").removeAttr('data-pending-index');
             }
@@ -452,9 +474,25 @@ async function handleStatementUpload(file) {
     showLoader();
     try {
         const transactions = await parsePhonePeStatement(file);
-        pendingTransactions = transactions;
 
-        if (transactions.length > 0) {
+        // Process transactions to find mappings
+        pendingTransactions = await Promise.all(transactions.map(async (tx) => {
+            // tx.description from PDF is the "Transaction Details" e.g. "ABC Petrolium"
+            const mapping = await getTransactionMapping(tx.description);
+
+            if (mapping) {
+                return {
+                    ...tx,
+                    mappedDescription: mapping.mappedDescription,
+                    mappedCategoryId: mapping.categoryId,
+                    mappedSubCategoryId: mapping.subCategoryId,
+                    isMapped: true
+                };
+            }
+            return { ...tx, isMapped: false };
+        }));
+
+        if (pendingTransactions.length > 0) {
             renderPendingTransactions();
             if (typeof toastr !== 'undefined') {
                 toastr.success(`Successfully extracted ${transactions.length} transactions!`);
@@ -475,43 +513,145 @@ async function handleStatementUpload(file) {
     }
 }
 
+async function handleAcceptTransaction(index) {
+    const tx = pendingTransactions[index];
+    if (!tx || !tx.isMapped) return;
+
+    showLoader();
+    try {
+        const expenseData = {
+            amount: tx.amount,
+            // Use resolved payment info if available, otherwise it might fail validation if required fields are missing
+            // For now, we rely on the user having set up defaults or the system just trying its best.
+            // If paymentType/SubType are missing, addExpense might throw or just save 0.
+            // But we don't have them in the mapping.
+            // We can try to infer again from the PDF string or defaults.
+            paymentType: 1, // Default to UPI? Risky.
+            subPaymentTypeId: 1, // Default? Risky.
+            description: tx.mappedDescription,
+            category: tx.mappedCategoryId,
+            subCategoryTypeId: tx.mappedSubCategoryId,
+            paymentDate: tx.date,
+            updateBalance: 'true'
+        };
+
+        // Try to refine Payment Info
+        if (tx.paymentMethod && Global_Response && Global_Response.PaymentSubType) {
+            const paymentMethod = tx.paymentMethod.toLowerCase();
+            const match = Global_Response.PaymentSubType.find(st => st.Text.toLowerCase().includes(paymentMethod));
+            if (match) {
+                expenseData.paymentType = match.PaymentType;
+                expenseData.subPaymentTypeId = match.Value;
+            }
+        }
+
+        // Validation check before sending
+        if (!expenseData.paymentType || !expenseData.subPaymentTypeId) {
+            toastr.warning("Could not auto-detect Payment Account. Please use 'Correct' button to select account manually.");
+            hideLoader();
+            return;
+        }
+
+        await addExpense(expenseData);
+
+        toastr.success('Transaction accepted and saved!');
+        removePendingTransaction(index);
+
+    } catch (error) {
+        console.error("Error accepting transaction:", error);
+        toastr.error("Failed to accept: " + error.message);
+    } finally {
+        hideLoader();
+    }
+}
+
 function renderPendingTransactions() {
     const list = $("#pendingTransactionsList");
     list.empty();
 
+    if (pendingTransactions.length === 0) {
+        $("#pendingTransactionsArea").addClass('d-none');
+        return;
+    }
+
+    const table = $(`
+        <div class="table-responsive">
+            <table class="table table-hover table-sm align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th style="font-size: 0.8rem;">Date</th>
+                        <th style="font-size: 0.8rem;">Amount</th>
+                        <th style="font-size: 0.8rem;">Trans. Details</th>
+                        <th style="font-size: 0.8rem;">Mapped Desc.</th>
+                        <th style="font-size: 0.8rem;">Category</th>
+                        <th style="font-size: 0.8rem; text-align: right;">Action</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    `);
+
+    const tbody = table.find('tbody');
+
     pendingTransactions.forEach((tx, index) => {
-        const item = $(`
-            <div class="pending-transaction-item p-2" data-index="${index}">
-                <div class="d-flex w-100 justify-content-between align-items-start">
-                    <div class="d-flex flex-column" style="max-width: 70%;">
-                        <h6 class="mb-1 text-dark text-truncate" style="font-size: 0.9rem; font-weight: 600;" title="${tx.description}">
-                            ${tx.description}
-                        </h6>
-                        ${tx.paymentMethod ? `
-                            <div class="d-flex align-items-center mt-1">
-                                <span class="material-icons text-muted me-1" style="font-size: 14px;">credit_card</span>
-                                <small class="text-secondary" style="font-size: 0.75rem;">${tx.paymentMethod}</small>
-                            </div>
-                        ` : ''}
+        const isMapped = tx.isMapped;
+        let categoryName = "-";
+
+        if (isMapped && Global_Response && Global_Response.Category) {
+            const cat = Global_Response.Category.find(c => c.Value == tx.mappedCategoryId);
+            const sub = Global_Response.SubCategory.find(s => s.Value == tx.mappedSubCategoryId);
+            if (cat) categoryName = cat.Text;
+        }
+
+        const tr = $(`
+            <tr class="${isMapped ? 'table-success' : ''}" style="${isMapped ? '--bs-table-bg: #d1e7dd;' : ''}">
+                <td style="font-size: 0.8rem;">${tx.date}</td>
+                <td style="font-size: 0.8rem;" class="${tx.type === 'Income' ? 'text-success' : 'text-danger'} fw-bold">
+                    ${tx.type === 'Income' ? '+' : '-'} ${tx.amount}
+                </td>
+                <td style="font-size: 0.8rem; max-width: 150px;" class="text-truncate" title="${tx.description}">
+                    ${tx.description}
+                </td>
+                <td style="font-size: 0.8rem; max-width: 150px;" class="text-truncate" title="${isMapped ? tx.mappedDescription : ''}">
+                    ${isMapped ? tx.mappedDescription : '<span class="text-muted fst-italic">New</span>'}
+                </td>
+                 <td style="font-size: 0.8rem;">
+                    ${categoryName}
+                </td>
+                <td class="text-end">
+                    <div class="btn-group btn-group-sm">
+                        ${isMapped ? `
+                        <button class="btn btn-success btn-accept p-1" title="Accept" data-index="${index}">
+                            <span class="material-icons" style="font-size: 16px;">check</span>
+                        </button>` : ''}
+                        <button class="btn btn-primary btn-correct p-1" title="Correct/Edit" data-index="${index}">
+                            <span class="material-icons" style="font-size: 16px;">edit</span>
+                        </button>
+                        <button class="btn btn-danger btn-reject p-1" title="Reject" data-index="${index}">
+                            <span class="material-icons" style="font-size: 16px;">close</span>
+                        </button>
                     </div>
-                    <div class="text-end">
-                        <span class="${tx.type === 'Income' ? 'text-success' : 'text-danger'} fw-bold d-block mb-1" style="font-size: 0.9rem;">
-                            ${tx.type === 'Income' ? '+' : '-'} ₹${tx.amount.toFixed(2)}
-                        </span>
-                        <small class="text-muted" style="font-size: 0.7rem;">${tx.date}</small>
-                    </div>
-                </div>
-            </div>
+                </td>
+            </tr>
         `);
 
-        item.click(function (e) {
-            e.preventDefault();
-            fillExpenseFormFromTransaction(index);
-            $(".pending-transaction-item").removeClass("active");
-            $(this).addClass("active");
-        });
+        tbody.append(tr);
+    });
 
-        list.append(item);
+    list.append(table);
+
+    // Bind events
+    list.find(".btn-accept").click(function () {
+        handleAcceptTransaction($(this).data('index'));
+    });
+
+    list.find(".btn-correct").click(function () {
+        fillExpenseFormFromTransaction($(this).data('index'));
+    });
+
+    list.find(".btn-reject").click(function () {
+        removePendingTransaction($(this).data('index'));
     });
 
     $("#pendingCount").text(pendingTransactions.length);
@@ -522,22 +662,10 @@ async function fillExpenseFormFromTransaction(index) {
     const tx = pendingTransactions[index];
     if (!tx) return;
 
-    // Auto-switch Transaction Type based on Debit/Credit (Income/BorrowLent)
+    // Auto-switch Transaction Type based on Debit/Credit
     if (tx.type === 'Credit' || tx.type === 'Income') {
-        // User requested default to "Borrow/Lent" for Credit
-        // Or "Income" if they prefer. Let's default to BorrowLent as implied by "Lent Return?" or "Borrowing?" request
-        // But "Income" is safer for "Paid to me" usually.
-        // User said: "If it's a Credit then by default it should select Lent/Borrow form"
         $("#TransactionType").val('BorrowLent').change();
-
-        // Try to set 'Lent' or 'Borrow' if we can guess, default to 'Borrow' (Received money = Borrowed?) 
-        // OR 'Lent' (Money returned to me). 
-        // Let's standardise: Credit usually means MONEY IN. 
-        // If I lent money and got it back -> Lent (Return). 
-        // If I borrowed money -> Borrow.
-        // Let's set type to 'Borrow' initially as safe bet or empty.
         $("#BorrowLentType").val('Borrow');
-
     } else {
         $("#TransactionType").val('Expense').change();
     }
@@ -546,7 +674,6 @@ async function fillExpenseFormFromTransaction(index) {
     $("#GenericAmount").val(tx.amount);
     $("#GenericDescription").val(tx.description);
 
-    // Parse "MMM DD, YYYY" or similar
     const dateObj = new Date(tx.date);
     if (!isNaN(dateObj.getTime())) {
         const year = dateObj.getFullYear();
@@ -557,12 +684,23 @@ async function fillExpenseFormFromTransaction(index) {
 
     // Specifc Logic for Expenses
     if ($("#TransactionType").val() === 'Expense') {
-        // First try to auto-fill based on description (Category/SubCategory focus)
-        await handleDescriptionAutoFill(tx.description);
+
+        // If mapped, pre-fill from mapping
+        if (tx.isMapped) {
+            $("#GenericDescription").val(tx.mappedDescription);
+            $("#Category").val(tx.mappedCategoryId);
+            FillSubCategory(tx.mappedCategoryId);
+            $("#SubCategory").val(tx.mappedSubCategoryId);
+
+            toastr.info("Auto-filled from saved mapping!");
+        } else {
+            // First try to auto-fill based on description (Category/SubCategory focus)
+            // skip payment info autofill as per user request (rely on PDF data)
+            await handleDescriptionAutoFill(tx.description, false);
+        }
 
         // Then override Payment Type/Sub Type if we have specific info from PDF
         if (tx.paymentMethod) {
-            // Search in Global_Response.PaymentSubType
             const paymentMethod = tx.paymentMethod.toLowerCase();
             let match = null;
 
@@ -605,13 +743,11 @@ function getCurrentDate() {
 }
 
 function loadUserProfile() {
-    // Remove any existing user info elements added by auth-guard.js
     const existingUserInfo = document.querySelector('.user-info');
     if (existingUserInfo) {
         existingUserInfo.remove();
     }
 
-    // Wait for auth to be ready
     const unsubscribe = auth.onAuthStateChanged((user) => {
         if (user) {
             document.getElementById('userName').textContent = user.displayName || 'User';
@@ -622,7 +758,6 @@ function loadUserProfile() {
         }
     });
 
-    // Set up logout functionality
     document.getElementById('logoutBtn').addEventListener('click', function (e) {
         e.preventDefault();
         auth.signOut().then(() => {
@@ -635,7 +770,6 @@ function loadUserProfile() {
         });
     });
 
-    // Initialize Bootstrap dropdown manually if needed
     if (typeof bootstrap !== 'undefined') {
         const dropdownElementList = [].slice.call(document.querySelectorAll('.dropdown-toggle'));
         dropdownElementList.map(function (dropdownToggleEl) {
@@ -652,7 +786,6 @@ function hideLoader() {
     $("#globalLoader").fadeOut();
 }
 
-// Handle tab navigation from URL hash
 document.addEventListener('DOMContentLoaded', function () {
     const hash = window.location.hash;
     if (hash) {

@@ -27,6 +27,7 @@ const COLLECTIONS = {
   PAYMENT_SUB_TYPES: "paymentSubTypes",
   SUB_CATEGORIES: "subCategories",
   INCOME_CATEGORIES: "incomeCategories",
+  TRANSACTION_MAPPINGS: "transactionMappings",
 };
 
 // Initialize default data for new users
@@ -715,7 +716,7 @@ export async function updateExpense(expenseId, expenseData) {
       where("__name__", "==", expenseId)
     );
     const originalExpenseSnapshot = await getDocs(originalExpenseQuery);
-    
+
     if (originalExpenseSnapshot.empty) {
       throw new Error("Expense not found");
     }
@@ -768,7 +769,7 @@ export async function updateIncome(incomeId, incomeData) {
       where("__name__", "==", incomeId)
     );
     const originalIncomeSnapshot = await getDocs(originalIncomeQuery);
-    
+
     if (originalIncomeSnapshot.empty) {
       throw new Error("Income not found");
     }
@@ -807,6 +808,54 @@ export async function updateIncome(incomeId, incomeData) {
   }
 }
 
+// Save transaction mapping (Learning feature)
+export async function saveTransactionMapping(mappingData) {
+  const userId = await getCurrentUserId();
+
+  try {
+    const mapping = {
+      userId,
+      originalDescription: mappingData.originalDescription,
+      mappedDescription: mappingData.mappedDescription,
+      categoryId: parseInt(mappingData.categoryId),
+      subCategoryId: parseInt(mappingData.subCategoryId),
+      createdAt: serverTimestamp()
+    };
+
+    const docRef = await addDoc(collection(db, COLLECTIONS.TRANSACTION_MAPPINGS), mapping);
+    return { id: docRef.id, ...mapping };
+  } catch (error) {
+    console.error("Error saving transaction mapping:", error);
+    throw error;
+  }
+}
+
+// Get transaction mapping (Learning feature)
+export async function getTransactionMapping(originalDescription) {
+  const userId = await getCurrentUserId();
+
+  try {
+    const q = query(
+      collection(db, COLLECTIONS.TRANSACTION_MAPPINGS),
+      where("userId", "==", userId),
+      where("originalDescription", "==", originalDescription),
+      orderBy("createdAt", "desc"),
+      limit(1)
+    );
+
+    const querySnapshot = await getDocs(q);
+
+    if (!querySnapshot.empty) {
+      return querySnapshot.docs[0].data();
+    }
+
+    return null;
+  } catch (error) {
+    console.error("Error getting transaction mapping:", error);
+    return null; // Don't throw, just return null if not found or error
+  }
+}
+
 // Delete expense with balance adjustment
 export async function deleteExpense(expenseId) {
   const userId = await getCurrentUserId();
@@ -819,7 +868,7 @@ export async function deleteExpense(expenseId) {
       where("__name__", "==", expenseId)
     );
     const expenseSnapshot = await getDocs(expenseQuery);
-    
+
     if (expenseSnapshot.empty) {
       throw new Error("Expense not found");
     }
@@ -852,7 +901,7 @@ export async function deleteIncome(incomeId) {
       where("__name__", "==", incomeId)
     );
     const incomeSnapshot = await getDocs(incomeQuery);
-    
+
     if (incomeSnapshot.empty) {
       throw new Error("Income not found");
     }
@@ -945,7 +994,7 @@ export async function searchTransactions(searchTerm, startDate = null, endDate =
 
     const filteredIncome = incomeSnapshot.docs
       .map(doc => ({ id: doc.id, ...doc.data() }))
-      .filter(income => 
+      .filter(income =>
         (income.description && income.description.toLowerCase().includes(searchLower)) ||
         (income.amount && income.amount.toString().includes(searchTerm))
       );
@@ -1055,7 +1104,7 @@ export async function updateBorrowLent(borrowLentId, borrowLentData) {
       where("__name__", "==", borrowLentId)
     );
     const originalBorrowLentSnapshot = await getDocs(originalBorrowLentQuery);
-    
+
     if (originalBorrowLentSnapshot.empty) {
       throw new Error("Borrow/Lent record not found");
     }
@@ -1125,7 +1174,7 @@ export async function deleteBorrowLent(borrowLentId) {
       where("__name__", "==", borrowLentId)
     );
     const borrowLentSnapshot = await getDocs(borrowLentQuery);
-    
+
     if (borrowLentSnapshot.empty) {
       throw new Error("Borrow/Lent record not found");
     }
