@@ -14,9 +14,30 @@
     <!-- Toastr CSS and JS for toast notifications -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+    <script>
+        // Configure Toastr
+        toastr.options = {
+            "closeButton": true,
+            "debug": false,
+            "newestOnTop": true,
+            "progressBar": true,
+            "positionClass": "toast-bottom-right",
+            "preventDuplicates": false,
+            "onclick": null,
+            "showDuration": "300",
+            "hideDuration": "1000",
+            "timeOut": "5000",
+            "extendedTimeOut": "1000",
+            "showEasing": "swing",
+            "hideEasing": "linear",
+            "showMethod": "fadeIn",
+            "hideMethod": "fadeOut"
+        };
+    </script>
     <title>Login - Expense Manager</title>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <link rel="stylesheet" href="styles/login.css">
+    <link rel="icon" type="image/png" href="images/icon-192.png">
 </head>
 
 <body>
@@ -29,18 +50,19 @@
                 </div>
                 <p class="auth-subtitle">Sign in to manage your expenses</p>
             </div>
-            
+
             <div class="auth-body">
                 <div id="login-section">
                     <button id="google-signin-btn" class="btn btn-google">
-                        <img src="https://developers.google.com/identity/images/g-logo.png" alt="Google" class="google-icon">
+                        <img src="https://developers.google.com/identity/images/g-logo.png" alt="Google"
+                            class="google-icon">
                         <span>Continue with Google</span>
                     </button>
-                    
+
                     <div class="divider">
                         <span>or</span>
                     </div>
-                    
+
                     <div class="guest-login">
                         <p class="guest-text">Want to try without signing in?</p>
                         <button id="guest-login-btn" class="btn btn-guest">
@@ -49,7 +71,7 @@
                         </button>
                     </div>
                 </div>
-                
+
                 <div id="loading-section" class="d-none">
                     <div class="loading-spinner">
                         <div class="spinner"></div>
@@ -57,11 +79,11 @@
                     </div>
                 </div>
             </div>
-            
+
             <div class="auth-footer">
                 <p class="footer-text">
-                    By continuing, you agree to our 
-                    <a href="#" class="footer-link">Terms of Service</a> and 
+                    By continuing, you agree to our
+                    <a href="#" class="footer-link">Terms of Service</a> and
                     <a href="#" class="footer-link">Privacy Policy</a>
                 </p>
             </div>
@@ -73,4 +95,4 @@
     <script type="module" src="scripts/auth.js"></script>
 </body>
 
-</html> 
+</html>
