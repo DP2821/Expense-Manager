@@ -61,6 +61,11 @@
                             <span class="material-icons align-middle">account_balance</span> Balance
                         </a>
                     </li>
+                    <li class="nav-item">
+                        <a class="btn btn-gradient-secondary mx-1 nav-link-btn" href="Timeline.html">
+                            <span class="material-icons align-middle">timeline</span> Timeline
+                        </a>
+                    </li>
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="userDropdown"
                             role="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -177,6 +182,14 @@
                                 </div>
                             </div>
                             <div class="row">
+                                <div class="col-md-6 d-none" id="billDayContainer">
+                                    <div class="mb-3">
+                                        <label for="billDueDay" class="form-label">Bill Due Day (1-31)</label>
+                                        <input type="number" class="form-control" id="billDueDay" placeholder="e.g. 10"
+                                            min="1" max="31">
+                                        <small class="text-muted">Used for cash flow projection</small>
+                                    </div>
+                                </div>
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         <label for="creditLimit" class="form-label">Credit Limit (for credit

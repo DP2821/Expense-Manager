@@ -159,63 +159,89 @@ export async function initializeUserData() {
   const userId = await getCurrentUserId();
 
   try {
-    // Check if user data already exists
-    const existingData = await getDocs(
+    // Check Categories
+    const categoriesSnapshot = await getDocs(
+      query(collection(db, COLLECTIONS.CATEGORIES), where("userId", "==", userId))
+    );
+    if (categoriesSnapshot.empty) {
+      for (const category of DEFAULT_DATA.categories) {
+        await addDoc(collection(db, COLLECTIONS.CATEGORIES), {
+          ...category,
+          userId,
+          createdAt: serverTimestamp(),
+        });
+      }
+    }
+
+    // Check Payment Types
+    const paymentTypesSnapshot = await getDocs(
       query(
-        collection(db, COLLECTIONS.CATEGORIES),
+        collection(db, COLLECTIONS.PAYMENT_TYPES),
         where("userId", "==", userId)
       )
     );
-    if (!existingData.empty) {
-      return; // Data already exists
+    if (paymentTypesSnapshot.empty) {
+      for (const paymentType of DEFAULT_DATA.paymentTypes) {
+        await addDoc(collection(db, COLLECTIONS.PAYMENT_TYPES), {
+          ...paymentType,
+          userId,
+          createdAt: serverTimestamp(),
+        });
+      }
     }
 
-    // Initialize categories
-    for (const category of DEFAULT_DATA.categories) {
-      await addDoc(collection(db, COLLECTIONS.CATEGORIES), {
-        ...category,
-        userId,
-        createdAt: serverTimestamp(),
-      });
+    // Check Payment Sub Types
+    const paymentSubTypesSnapshot = await getDocs(
+      query(
+        collection(db, COLLECTIONS.PAYMENT_SUB_TYPES),
+        where("userId", "==", userId)
+      )
+    );
+    if (paymentSubTypesSnapshot.empty) {
+      for (const paymentSubType of DEFAULT_DATA.paymentSubTypes) {
+        await addDoc(collection(db, COLLECTIONS.PAYMENT_SUB_TYPES), {
+          ...paymentSubType,
+          userId,
+          createdAt: serverTimestamp(),
+        });
+      }
     }
 
-    // Initialize payment types
-    for (const paymentType of DEFAULT_DATA.paymentTypes) {
-      await addDoc(collection(db, COLLECTIONS.PAYMENT_TYPES), {
-        ...paymentType,
-        userId,
-        createdAt: serverTimestamp(),
-      });
+    // Check Sub Categories
+    const subCategoriesSnapshot = await getDocs(
+      query(
+        collection(db, COLLECTIONS.SUB_CATEGORIES),
+        where("userId", "==", userId)
+      )
+    );
+    if (subCategoriesSnapshot.empty) {
+      for (const subCategory of DEFAULT_DATA.subCategories) {
+        await addDoc(collection(db, COLLECTIONS.SUB_CATEGORIES), {
+          ...subCategory,
+          userId,
+          createdAt: serverTimestamp(),
+        });
+      }
     }
 
-    // Initialize payment sub types
-    for (const paymentSubType of DEFAULT_DATA.paymentSubTypes) {
-      await addDoc(collection(db, COLLECTIONS.PAYMENT_SUB_TYPES), {
-        ...paymentSubType,
-        userId,
-        createdAt: serverTimestamp(),
-      });
+    // Check Income Categories
+    const incomeCategoriesSnapshot = await getDocs(
+      query(
+        collection(db, COLLECTIONS.INCOME_CATEGORIES),
+        where("userId", "==", userId)
+      )
+    );
+    if (incomeCategoriesSnapshot.empty) {
+      for (const incomeCategory of DEFAULT_DATA.incomeCategories) {
+        await addDoc(collection(db, COLLECTIONS.INCOME_CATEGORIES), {
+          ...incomeCategory,
+          userId,
+          createdAt: serverTimestamp(),
+        });
+      }
     }
 
-    // Initialize sub categories
-    for (const subCategory of DEFAULT_DATA.subCategories) {
-      await addDoc(collection(db, COLLECTIONS.SUB_CATEGORIES), {
-        ...subCategory,
-        userId,
-        createdAt: serverTimestamp(),
-      });
-    }
-
-    // Initialize income categories
-    for (const incomeCategory of DEFAULT_DATA.incomeCategories) {
-      await addDoc(collection(db, COLLECTIONS.INCOME_CATEGORIES), {
-        ...incomeCategory,
-        userId,
-        createdAt: serverTimestamp(),
-      });
-    }
-
-    console.log("User data initialized successfully");
+    console.log("User data initialized successfully (if needed)");
   } catch (error) {
     console.error("Error initializing user data:", error);
     throw error;
@@ -272,27 +298,39 @@ export async function getAllDropdownData() {
       ),
     ]);
 
-    // Convert to the format expected by the frontend
+    // Convert to the format expected by the frontend and deduplicate
+
+    const uniqueMap = (docs, keyField = "id") => {
+      const seen = new Set();
+      return docs.filter(doc => {
+        const val = doc.data()[keyField];
+        if (seen.has(val)) return false;
+        seen.add(val);
+        return true;
+      });
+    };
+
     const result = {
-      Category: categories.docs.map((doc) => ({
+      Category: uniqueMap(categories.docs).map((doc) => ({
         Value: doc.data().id,
         Text: doc.data().name,
       })),
-      PaymentType: paymentTypes.docs.map((doc) => ({
+      PaymentType: uniqueMap(paymentTypes.docs).map((doc) => ({
         Value: doc.data().id,
         Text: doc.data().name,
       })),
-      PaymentSubType: paymentSubTypes.docs.map((doc) => ({
+      PaymentSubType: uniqueMap(paymentSubTypes.docs).map((doc) => ({
         Value: doc.data().id,
         Text: doc.data().name,
         PaymentType: doc.data().paymentTypeId,
+        billDueDay: doc.data().billDueDay // Include query field
       })),
-      SubCategory: subCategories.docs.map((doc) => ({
+      SubCategory: uniqueMap(subCategories.docs).map((doc) => ({
         Value: doc.data().id,
         Text: doc.data().name,
         CategoryId: doc.data().categoryId,
       })),
-      IncomeCategory: incomeCategories.docs.map((doc) => ({
+      IncomeCategory: uniqueMap(incomeCategories.docs).map((doc) => ({
         Value: doc.data().id,
         Text: doc.data().name,
       })),
@@ -753,6 +791,38 @@ export async function updateExpense(expenseId, expenseData) {
     return { id: expenseId, ...updatedExpense };
   } catch (error) {
     console.error("Error updating expense:", error);
+    throw error;
+  }
+}
+
+// Update account metadata (e.g. Bill Due Day)
+export async function updateAccountMetadata(accountId, metadata) {
+  const userId = await getCurrentUserId();
+
+  try {
+    // Find the payment sub type doc
+    const q = query(
+      collection(db, COLLECTIONS.PAYMENT_SUB_TYPES),
+      where("userId", "==", userId),
+      where("id", "==", accountId)
+    );
+
+    const querySnapshot = await getDocs(q);
+
+    if (querySnapshot.empty) {
+      throw new Error("Account not found");
+    }
+
+    const docRef = querySnapshot.docs[0].ref;
+
+    await updateDoc(docRef, {
+      ...metadata,
+      updatedAt: serverTimestamp()
+    });
+
+    return true;
+  } catch (error) {
+    console.error("Error updating account metadata:", error);
     throw error;
   }
 }
