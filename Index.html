@@ -14,6 +14,7 @@
     <!-- Toastr CSS and JS for toast notifications -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script>
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
@@ -128,6 +129,11 @@
                             <span class="material-icons align-middle">timeline</span> Timeline
                         </a>
                     </li>
+                    <li class="nav-item">
+                        <a class="btn btn-outline-light mx-1 nav-link-btn" href="ManageData.html">
+                            <span class="material-icons align-middle">settings</span> Manage Data
+                        </a>
+                    </li>
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="userDropdown"
                             role="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -167,10 +173,17 @@
                                             <span class="material-icons text-primary"
                                                 style="font-size: 48px;">cloud_upload</span>
                                             <p class="mb-2 mt-2 text-muted small">Drag and drop or click to upload</p>
-                                            <label for="statementUpload" class="btn btn-sm btn-gradient-primary">
-                                                Choose PhonePe PDF
-                                            </label>
-                                            <input class="d-none" type="file" id="statementUpload" accept=".pdf">
+                                            <div class="d-flex justify-content-center gap-2">
+                                                <label for="statementUpload" class="btn btn-sm btn-gradient-primary">
+                                                    Choose PhonePe PDF
+                                                </label>
+                                                <input class="d-none" type="file" id="statementUpload" accept=".pdf">
+
+                                                <label for="excelUpload" class="btn btn-sm btn-gradient-info">
+                                                    Choose Paytm Excel
+                                                </label>
+                                                <input class="d-none" type="file" id="excelUpload" accept=".xlsx, .xls">
+                                            </div>
                                             <div id="fileNameDisplay" class="mt-2 small text-success fw-bold"></div>
                                         </div>
                                         <div id="pendingTransactionsArea" class="d-none">

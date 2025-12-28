@@ -30,121 +30,6 @@ const COLLECTIONS = {
   TRANSACTION_MAPPINGS: "transactionMappings",
 };
 
-// Initialize default data for new users
-const DEFAULT_DATA = {
-  categories: [
-    { id: 1, name: "🏠   Home expense" },
-    { id: 2, name: "🍔  Food and Drink" },
-    { id: 3, name: "⛽   Petrol" },
-    { id: 4, name: "🚜  Farming expense" },
-    { id: 5, name: "👨‍⚕️   Health" },
-    { id: 6, name: "👕  Clothes" },
-    { id: 7, name: "🚗  Transport" },
-    { id: 8, name: "🧳   Trip & Travels " },
-    { id: 9, name: "👪  Society expense" },
-    { id: 10, name: "🌏  General" },
-    { id: 11, name: "📱    Mobile Recharge" },
-    { id: 12, name: "💸   Investment" },
-    { id: 13, name: "💇  Saloon and Parlour" },
-    { id: 14, name: "🎬   Movies" },
-    { id: 15, name: "🅰️   Ahmedabad expenses" },
-    { id: 16, name: "🐄   Stable expense" },
-    { id: 17, name: "👰‍♂️Marraige, Engagement" },
-    { id: 18, name: "👟  Shoes" },
-    { id: 18, name: "💵  Debt/EMI" },
-  ],
-  paymentTypes: [
-    { id: 1, name: "UPI" },
-    { id: 2, name: "Cash" },
-    { id: 3, name: "Credit Card" },
-    { id: 4, name: "Cheque" },
-  ],
-  paymentSubTypes: [
-    { id: 1, name: "Kajal ICICI", paymentTypeId: 1 },
-    { id: 2, name: "Dhruvil HDFC", paymentTypeId: 1 },
-    { id: 3, name: "Dhruvil SBI", paymentTypeId: 1 },
-    { id: 4, name: "Rakesh SBI", paymentTypeId: 1 },
-    { id: 5, name: "Rakesh SK", paymentTypeId: 1 },
-    { id: 6, name: "Rakesh ICICI", paymentTypeId: 1 },
-    { id: 7, name: "Rakesh", paymentTypeId: 2 },
-    { id: 8, name: "Dhruvil", paymentTypeId: 2 },
-    { id: 9, name: "Kajal", paymentTypeId: 2 },
-    { id: 10, name: "HDFC RuPay", paymentTypeId: 3 },
-    { id: 11, name: "HDFC Visa", paymentTypeId: 3 },
-    { id: 12, name: "Dhruvil Indian", paymentTypeId: 1 },
-    { id: 13, name: "HDFC Pixel", paymentTypeId: 3 },
-    { id: 14, name: "Axis", paymentTypeId: 3 },
-  ],
-  subCategories: [
-    { id: 1, name: "Groceries", categoryId: 1 },
-    { id: 2, name: "Vegetables", categoryId: 1 },
-    { id: 3, name: "Gas bottle", categoryId: 1 },
-    { id: 4, name: "Oil", categoryId: 1 },
-    { id: 5, name: "Electricity", categoryId: 1 },
-    { id: 6, name: "Hotel", categoryId: 2 },
-    { id: 7, name: "FastFood", categoryId: 2 },
-    { id: 8, name: "Ice-Cream", categoryId: 2 },
-    { id: 9, name: "TVS", categoryId: 3 },
-    { id: 10, name: "Hero Splendar", categoryId: 3 },
-    { id: 11, name: "Lightbill", categoryId: 4 },
-    { id: 12, name: "Seeds", categoryId: 4 },
-    { id: 13, name: "Fertilizer", categoryId: 4 },
-    { id: 14, name: "Tractor", categoryId: 4 },
-    { id: 15, name: "Labour work", categoryId: 4 },
-    { id: 16, name: "Rakesh", categoryId: 5 },
-    { id: 17, name: "Kajal", categoryId: 5 },
-    { id: 18, name: "Dhruvil", categoryId: 5 },
-    { id: 19, name: "Rakesh", categoryId: 6 },
-    { id: 20, name: "Kajal", categoryId: 6 },
-    { id: 21, name: "Dhruvil", categoryId: 6 },
-    { id: 22, name: "Rakesh", categoryId: 7 },
-    { id: 23, name: "Kajal", categoryId: 7 },
-    { id: 24, name: "Dhruvil", categoryId: 7 },
-    { id: 25, name: "All", categoryId: 7 },
-    { id: 26, name: "Rakesh", categoryId: 8 },
-    { id: 27, name: "Kajal", categoryId: 8 },
-    { id: 28, name: "Dhruvil", categoryId: 8 },
-    { id: 29, name: "All", categoryId: 8 },
-    { id: 30, name: "Marriage", categoryId: 9 },
-    { id: 31, name: "Other", categoryId: 9 },
-    { id: 32, name: "Rakesh", categoryId: 11 },
-    { id: 33, name: "Kajal", categoryId: 11 },
-    { id: 34, name: "Dhruvil", categoryId: 11 },
-    { id: 35, name: "Lunch", categoryId: 15 },
-    { id: 36, name: "Transport", categoryId: 15 },
-    { id: 37, name: "Room Rent", categoryId: 15 },
-    { id: 38, name: "Mutual Fund", categoryId: 12 },
-    { id: 39, name: "Stocks", categoryId: 12 },
-    { id: 40, name: "General", categoryId: 10 },
-    { id: 41, name: "Cow Buffalo", categoryId: 16 },
-    { id: 42, name: "PhotoGraphy", categoryId: 17 },
-    { id: 43, name: "General", categoryId: 17 },
-    { id: 44, name: "Dhruvil", categoryId: 13 },
-    { id: 45, name: "Rakesh", categoryId: 13 },
-    { id: 46, name: "Kajal", categoryId: 13 },
-    { id: 47, name: "Dhruvil", categoryId: 18 },
-    { id: 48, name: "Rakesh", categoryId: 18 },
-    { id: 49, name: "Kajal", categoryId: 18 },
-    { id: 50, name: "Debt/EMI", categoryId: 19 },
-    { id: 51, name: "Insurance", categoryId: 12 },
-    { id: 52, name: "Kashish", categoryId: 5 },
-    { id: 53, name: "Kashish", categoryId: 6 },
-    { id: 54, name: "Theater", categoryId: 14 },
-    { id: 55, name: "OTT", categoryId: 14 },
-    { id: 56, name: "General", categoryId: 15 },
-    { id: 57, name: "Kashish", categoryId: 11 },
-    { id: 58, name: "Nexon", categoryId: 3 },
-  ],
-  incomeCategories: [
-    { id: 1, name: "Salary" },
-    { id: 2, name: "Freelance" },
-    { id: 3, name: "Investment" },
-    { id: 4, name: "Business" },
-    { id: 5, name: "Gift" },
-    { id: 6, name: "Other" },
-  ],
-};
-
 // Helper function to get user ID
 async function getCurrentUserId() {
   const userId = await getUserId();
@@ -156,99 +41,13 @@ async function getCurrentUserId() {
 
 // Initialize user data (run once for new users)
 export async function initializeUserData() {
-  const userId = await getCurrentUserId();
-
-  try {
-    // Check Categories
-    const categoriesSnapshot = await getDocs(
-      query(collection(db, COLLECTIONS.CATEGORIES), where("userId", "==", userId))
-    );
-    if (categoriesSnapshot.empty) {
-      for (const category of DEFAULT_DATA.categories) {
-        await addDoc(collection(db, COLLECTIONS.CATEGORIES), {
-          ...category,
-          userId,
-          createdAt: serverTimestamp(),
-        });
-      }
-    }
-
-    // Check Payment Types
-    const paymentTypesSnapshot = await getDocs(
-      query(
-        collection(db, COLLECTIONS.PAYMENT_TYPES),
-        where("userId", "==", userId)
-      )
-    );
-    if (paymentTypesSnapshot.empty) {
-      for (const paymentType of DEFAULT_DATA.paymentTypes) {
-        await addDoc(collection(db, COLLECTIONS.PAYMENT_TYPES), {
-          ...paymentType,
-          userId,
-          createdAt: serverTimestamp(),
-        });
-      }
-    }
-
-    // Check Payment Sub Types
-    const paymentSubTypesSnapshot = await getDocs(
-      query(
-        collection(db, COLLECTIONS.PAYMENT_SUB_TYPES),
-        where("userId", "==", userId)
-      )
-    );
-    if (paymentSubTypesSnapshot.empty) {
-      for (const paymentSubType of DEFAULT_DATA.paymentSubTypes) {
-        await addDoc(collection(db, COLLECTIONS.PAYMENT_SUB_TYPES), {
-          ...paymentSubType,
-          userId,
-          createdAt: serverTimestamp(),
-        });
-      }
-    }
-
-    // Check Sub Categories
-    const subCategoriesSnapshot = await getDocs(
-      query(
-        collection(db, COLLECTIONS.SUB_CATEGORIES),
-        where("userId", "==", userId)
-      )
-    );
-    if (subCategoriesSnapshot.empty) {
-      for (const subCategory of DEFAULT_DATA.subCategories) {
-        await addDoc(collection(db, COLLECTIONS.SUB_CATEGORIES), {
-          ...subCategory,
-          userId,
-          createdAt: serverTimestamp(),
-        });
-      }
-    }
-
-    // Check Income Categories
-    const incomeCategoriesSnapshot = await getDocs(
-      query(
-        collection(db, COLLECTIONS.INCOME_CATEGORIES),
-        where("userId", "==", userId)
-      )
-    );
-    if (incomeCategoriesSnapshot.empty) {
-      for (const incomeCategory of DEFAULT_DATA.incomeCategories) {
-        await addDoc(collection(db, COLLECTIONS.INCOME_CATEGORIES), {
-          ...incomeCategory,
-          userId,
-          createdAt: serverTimestamp(),
-        });
-      }
-    }
-
-    console.log("User data initialized successfully (if needed)");
-  } catch (error) {
-    console.error("Error initializing user data:", error);
-    throw error;
-  }
+  // New user starts with empty data. 
+  // Custom categories/types must be added via "Manage Data" page.
+  console.log("User data initialization skipped (Clean Start Policy)");
+  return;
 }
 
-// Get all dropdown data
+// Get all dropdown data (Excludes soft-deleted items)
 export async function getAllDropdownData() {
   const userId = await getCurrentUserId();
 
@@ -299,12 +98,17 @@ export async function getAllDropdownData() {
     ]);
 
     // Convert to the format expected by the frontend and deduplicate
+    // Filter out items where isDeleted is true
 
     const uniqueMap = (docs, keyField = "id") => {
       const seen = new Set();
       return docs.filter(doc => {
-        const val = doc.data()[keyField];
+        const data = doc.data();
+        if (data.isDeleted) return false; // Filter out soft deleted items
+
+        const val = data[keyField];
         if (seen.has(val)) return false;
+
         seen.add(val);
         return true;
       });
@@ -342,6 +146,107 @@ export async function getAllDropdownData() {
     throw error;
   }
 }
+
+// --- Generic Master Data CRUD (for ManageData page) ---
+
+// Get all master data (Including deleted, for management)
+export async function getAllMasterData(collectionName) {
+  const userId = await getCurrentUserId();
+  try {
+    const q = query(
+      collection(db, collectionName),
+      where("userId", "==", userId),
+      orderBy("id", "asc")
+      // Note: You might want to order by createdAt or name depending on UI
+    );
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  } catch (error) {
+    console.error(`Error getting all data for ${collectionName}:`, error);
+    throw error;
+  }
+}
+
+// Add generic master data
+export async function addMasterData(collectionName, data) {
+  const userId = await getCurrentUserId();
+  try {
+    // Find max ID for auto-increment (naive approach, okay for low volume)
+    // Ideally use a counter or transaction, but relying on client-side check of existing data is "okay" for single user app
+    // Actually, let's just use existing ID logic if passed, or find max. 
+    // For safety, let's find the max numeric ID existing in the collection for this user.
+
+    const allDocsSnapshot = await getDocs(query(collection(db, collectionName), where("userId", "==", userId)));
+    let maxId = 0;
+    allDocsSnapshot.forEach(doc => {
+      const d = doc.data();
+      if (d.id && typeof d.id === 'number' && d.id > maxId) {
+        maxId = d.id;
+      }
+    });
+
+    const newItem = {
+      ...data,
+      id: maxId + 1, // Auto-increment ID
+      userId,
+      createdAt: serverTimestamp(),
+      isDeleted: false
+    };
+
+    const docRef = await addDoc(collection(db, collectionName), newItem);
+    return { id: docRef.id, ...newItem };
+  } catch (error) {
+    console.error(`Error adding to ${collectionName}:`, error);
+    throw error;
+  }
+}
+
+// Update generic master data
+export async function updateMasterData(collectionName, docId, data) {
+  try {
+    const docRef = doc(db, collectionName, docId);
+    await updateDoc(docRef, {
+      ...data,
+      updatedAt: serverTimestamp()
+    });
+    return { id: docId, ...data };
+  } catch (error) {
+    console.error(`Error updating ${collectionName}:`, error);
+    throw error;
+  }
+}
+
+// Soft delete generic master data
+export async function softDeleteMasterData(collectionName, docId) {
+  try {
+    const docRef = doc(db, collectionName, docId);
+    await updateDoc(docRef, {
+      isDeleted: true,
+      updatedAt: serverTimestamp()
+    });
+    return { id: docId, isDeleted: true };
+  } catch (error) {
+    console.error(`Error soft deleting from ${collectionName}:`, error);
+    throw error;
+  }
+}
+
+// Restore soft deleted data
+export async function restoreMasterData(collectionName, docId) {
+  try {
+    const docRef = doc(db, collectionName, docId);
+    await updateDoc(docRef, {
+      isDeleted: false,
+      updatedAt: serverTimestamp()
+    });
+    return { id: docId, isDeleted: false };
+  } catch (error) {
+    console.error(`Error restoring ${collectionName}:`, error);
+    throw error;
+  }
+}
+
+// --- End Generic CRUD ---
 
 // Add expense
 export async function addExpense(expenseData) {

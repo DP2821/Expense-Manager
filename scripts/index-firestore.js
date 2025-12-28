@@ -10,6 +10,7 @@ import {
     getTransactionMapping
 } from './firestore-service.js';
 import { parsePhonePeStatement } from './pdf-parser.js';
+import { parsePaytmExcel } from './excel-parser.js';
 import { getUserId } from './auth-helper.js';
 import { auth } from './firebase-config.js';
 
@@ -98,8 +99,8 @@ function setupEventListeners() {
             if (description !== null && description !== undefined && description.trim() !== '') {
                 showLoader();
 
-                // If we are editing a pending transaction (PDF), do NOT autofill payment info
-                // because we want to keep the payment info extracted from the PDF.
+                // If we are editing a pending transaction (PDF/Excel), do NOT autofill payment info
+                // because we want to keep the payment info extracted from the file.
                 const pendingIndex = $("#UnifiedSaveBtn").attr('data-pending-index');
                 const includePayment = (pendingIndex === undefined || pendingIndex === null || pendingIndex === "");
 
@@ -114,6 +115,15 @@ function setupEventListeners() {
             const file = e.target.files[0];
             $("#fileNameDisplay").text(file.name);
             handleStatementUpload(file);
+        }
+    });
+
+    // Excel Statement Upload
+    $("#excelUpload").change(function (e) {
+        if (e.target.files.length > 0) {
+            const file = e.target.files[0];
+            $("#fileNameDisplay").text(file.name);
+            handleExcelUpload(file);
         }
     });
 
@@ -511,6 +521,86 @@ async function handleStatementUpload(file) {
         hideLoader();
         $("#statementUpload").val('');
     }
+}
+
+async function handleExcelUpload(file) {
+    showLoader();
+    try {
+        const transactions = await parsePaytmExcel(file);
+
+        // Process transactions to find mappings using prioritization logic:
+        // 1. Remarks -> getAutoFillData
+        // 2. Transaction Details -> getAutoFillData
+        pendingTransactions = await Promise.all(transactions.map(async (tx) => {
+            let mappedData = null;
+            let finalDesc = tx.description; // Default
+
+            // Strategy 1: check Remarks (if available)
+            if (tx.remarks) {
+                const autoFill = await getAutoFillData(tx.remarks);
+                if (autoFill && autoFill.SubCategoryTypeId) {
+                    mappedData = autoFill;
+                    finalDesc = tx.remarks;
+                }
+            }
+
+            // Strategy 2: check Transaction Details (fallback)
+            if (!mappedData && tx.txDetails) {
+                const autoFill = await getAutoFillData(tx.txDetails);
+                if (autoFill && autoFill.SubCategoryTypeId) {
+                    mappedData = autoFill;
+                    finalDesc = tx.txDetails; // Use tx details as description if that matched
+                }
+            }
+
+            // If we found a match, populate mapped fields
+            if (mappedData) {
+                return {
+                    ...tx,
+                    mappedDescription: finalDesc,
+                    // We need to find the CategoryId for the SubCategoryId logic to work fully in render?
+                    // getAutoFillData returns SubCategoryTypeId. 
+                    // We need to look up CategoryId from Global_Response using SubCategoryTypeId
+                    mappedSubCategoryId: mappedData.SubCategoryTypeId,
+                    mappedCategoryId: getCategoryIdFromSubCategory(mappedData.SubCategoryTypeId),
+                    isMapped: true,
+                    // We update the description to be the one that matched (Remarks or TxDetails) 
+                    // so the user sees what was used.
+                    description: finalDesc
+                };
+            }
+
+            return { ...tx, isMapped: false };
+        }));
+
+        if (pendingTransactions.length > 0) {
+            renderPendingTransactions();
+            if (typeof toastr !== 'undefined') {
+                toastr.success(`Successfully extracted ${transactions.length} Excel transactions!`);
+            }
+        } else {
+            if (typeof toastr !== 'undefined') {
+                toastr.warning('No transactions found in the Excel file.');
+            }
+        }
+    } catch (error) {
+        console.error("Excel Parsing Error:", error);
+        if (typeof toastr !== 'undefined') {
+            toastr.error('Failed to parse Excel: ' + error.message);
+        }
+    } finally {
+        hideLoader();
+        $("#excelUpload").val('');
+    }
+}
+
+// Helper to reverse lookup Category ID
+function getCategoryIdFromSubCategory(subCatId) {
+    if (Global_Response && Global_Response.SubCategory) {
+        const sub = Global_Response.SubCategory.find(s => s.Value == subCatId);
+        return sub ? sub.CategoryId : "";
+    }
+    return "";
 }
 
 async function handleAcceptTransaction(index) {

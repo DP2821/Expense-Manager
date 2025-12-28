@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Data | Expense Manager</title>
+    <!-- Dependencies (same as Index.html) -->
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"
+        integrity="sha256-2Pmvv0kuTBOenSvLm6bvfBSSHrUJ+3A7x6P5Ebd07/g=" crossorigin="anonymous"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet"
+        crossorigin="anonymous">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM"
+        crossorigin="anonymous"></script>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <!-- Toastr -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+
+    <link rel="stylesheet" href="styles/index.css">
+    <link rel="stylesheet" href="styles/gradient-theme.css">
+
+    <style>
+        .deleted-row {
+            opacity: 0.6;
+            background-color: #f8f9fa;
+        }
+
+        .deleted-row td {
+            text-decoration: line-through;
+            color: #6c757d;
+        }
+
+        .deleted-row .actions-cell {
+            text-decoration: none !important;
+        }
+
+        .action-btn {
+            cursor: pointer;
+            padding: 4px;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Navbar (Copied from Index.html) -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center" href="Dashboard.html">
+                <span class="material-icons me-2">account_balance_wallet</span>
+                Expense Manager
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="btn btn-outline-light mx-1 nav-link-btn" href="Index.html">
+                            <span class="material-icons align-middle">arrow_back</span> Back to Entry
+                        </a>
+                    </li>
+                    <li class="nav-item dropdown ms-2">
+                        <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="userDropdown"
+                            role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <span class="material-icons me-2">account_circle</span>
+                            <span id="userName">Loading...</span>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                            <li>
+                                <h6 class="dropdown-header" id="userEmail">Loading...</h6>
+                            </li>
+                            <li>
+                                <hr class="dropdown-divider">
+                            </li>
+                            <li><a class="dropdown-item" href="#" id="logoutBtn">
+                                    <span class="material-icons align-middle me-2">logout</span>Logout
+                                </a></li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <h2 class="mb-4">Manage Master Data</h2>
+
+        <!-- Tabs -->
+        <ul class="nav nav-tabs" id="manageDataTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="categories-tab" data-bs-toggle="tab"
+                    data-bs-target="#categories-pane" type="button" role="tab"
+                    data-collection="categories">Categories</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="subcategories-tab" data-bs-toggle="tab"
+                    data-bs-target="#subcategories-pane" type="button" role="tab" data-collection="subCategories">Sub
+                    Categories</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="payment-types-tab" data-bs-toggle="tab"
+                    data-bs-target="#payment-types-pane" type="button" role="tab" data-collection="paymentTypes">Payment
+                    Types</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="payment-subtypes-tab" data-bs-toggle="tab"
+                    data-bs-target="#payment-subtypes-pane" type="button" role="tab"
+                    data-collection="paymentSubTypes">Accounts / Wallets</button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="income-categories-tab" data-bs-toggle="tab"
+                    data-bs-target="#income-categories-pane" type="button" role="tab"
+                    data-collection="incomeCategories">Income Categories</button>
+            </li>
+        </ul>
+
+        <!-- Tab Content -->
+        <div class="tab-content border border-top-0 p-3 bg-white shadow-sm" id="manageDataTabContent"
+            style="min-height: 400px;">
+
+            <!-- Generic Table Container (Populated by JS) -->
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 id="currentTabTitle" class="text-primary m-0">Categories</h5>
+                <button class="btn btn-success btn-sm" id="btnAddNew">
+                    <span class="material-icons align-middle" style="font-size: 18px;">add</span> Add New
+                </button>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-hover align-middle" id="dataTable">
+                    <thead class="table-light">
+                        <tr id="tableHeaderRow">
+                            <!-- Headers injected dynamically -->
+                        </tr>
+                    </thead>
+                    <tbody id="tableBody">
+                        <!-- Rows injected dynamically -->
+                    </tbody>
+                </table>
+            </div>
+
+            <div id="loadingSpinner" class="text-center py-5">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Add/Edit Modal -->
+    <div class="modal fade" id="dataModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="dataModalLabel">Manage Item</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="dataForm">
+                        <input type="hidden" id="itemId">
+                        <div class="mb-3">
+                            <label for="itemName" class="form-label">Name</label>
+                            <input type="text" class="form-control" id="itemName" required>
+                        </div>
+
+                        <!-- Dynamic Fields (Parent Category, etc.) -->
+                        <div id="dynamicFields"></div>
+
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary" id="btnSaveData">Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configure Toastr
+        toastr.options = {
+            "closeButton": true,
+            "progressBar": true,
+            "positionClass": "toast-bottom-right",
+            "timeOut": "3000",
+        };
+    </script>
+
+    <!-- Auth Guard -->
+    <script type="module" src="scripts/auth-guard.js"></script>
+    <!-- Main Script -->
+    <script type="module" src="scripts/manage-data.js"></script>
+
+</body>
+
+</html>
