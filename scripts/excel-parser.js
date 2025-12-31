@@ -12,7 +12,7 @@ export async function parsePaytmExcel(file) {
                 }
 
                 const workbook = XLSX.read(data, { type: 'array' });
-                
+
                 // Target specific sheet
                 const sheetName = "Passbook Payment History";
                 if (!workbook.Sheets[sheetName]) {
@@ -20,7 +20,7 @@ export async function parsePaytmExcel(file) {
                 }
 
                 const worksheet = workbook.Sheets[sheetName];
-                
+
                 // Convert to JSON with raw values to handle dates better if possible, 
                 // but usually raw=false is safer for simple text. 
                 // Let's use header:0 to get array of objects.
@@ -63,7 +63,7 @@ function extractTransactionsFromExcel(data) {
         // Assuming DD/MM/YYYY format from the image
         const dateParts = dateStr.split('/');
         if (dateParts.length === 3) {
-             // DD/MM/YYYY -> YYYY-MM-DD
+            // DD/MM/YYYY -> YYYY-MM-DD
             dateStr = `${dateParts[2]}-${dateParts[1]}-${dateParts[0]}`;
         }
 
@@ -87,7 +87,7 @@ function extractTransactionsFromExcel(data) {
         // 3. Determine Description (Prioritize Remarks)
         const remarks = row["Remarks"] ? row["Remarks"].trim() : "";
         const txDetails = row["Transaction Details"] ? row["Transaction Details"].trim() : "";
-        
+
         // Logic: Remarks > Transaction Details
         if (remarks && remarks.length > 0) {
             parsedDesc = remarks;
@@ -110,11 +110,12 @@ function extractTransactionsFromExcel(data) {
             amount: parsedAmount,
             description: parsedDesc,
             type: parsedType,
-            paymentMethod: paymentMethod, 
+            paymentMethod: paymentMethod,
             originalString: JSON.stringify(row),
             // We pass both for the specific logic requested
             remarks: remarks,
-            txDetails: txDetails
+            txDetails: txDetails,
+            accountName: row["Your Account"] || ""
         });
     });
 

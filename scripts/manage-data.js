@@ -12,6 +12,7 @@ import { auth } from './firebase-config.js';
 let currentCollection = 'categories';
 let allData = {}; // Cache for generic data
 let dropdownData = {}; // Cache for parent dropdowns
+let showDeleted = false;
 
 $(document).ready(function () {
     init();
@@ -35,9 +36,16 @@ async function init() {
         loadTabData(collection);
     });
 
-    // Add New Button
     $("#btnAddNew").click(function () {
         openModal();
+    });
+
+    // Show Deleted Checkbox
+    $("#chkShowDeleted").change(function () {
+        showDeleted = $(this).is(':checked');
+        if (allData[currentCollection]) {
+            renderTable(currentCollection, allData[currentCollection]);
+        }
     });
 
     // Save Button
@@ -89,6 +97,8 @@ function renderTable(collection, data) {
     // Render Rows
     data.forEach(item => {
         const isDeleted = item.isDeleted === true;
+        if (isDeleted && !showDeleted) return; // Skip deleted items if not showing them
+
         let trClass = isDeleted ? 'deleted-row' : '';
 
         // Build Row HTML
@@ -111,12 +121,12 @@ function renderTable(collection, data) {
         if (isDeleted) {
             actionBtn = `
                 <span class="badge bg-secondary me-2">Deleted</span>
-                <span class="material-icons text-success action-btn" title="Restore" onclick="handleRestore('${item.id}')">restore_from_trash</span>
+                <span class="material-icons text-success action-btn" title="Restore" onclick="handleRestore('${item.docId}')">restore_from_trash</span>
             `;
         } else {
             actionBtn = `
-                <span class="material-icons text-primary action-btn me-2" title="Edit" onclick="handleEdit('${item.id}')">edit</span>
-                <span class="material-icons text-danger action-btn" title="Delete" onclick="handleDelete('${item.id}')">delete</span>
+                <span class="material-icons text-primary action-btn me-2" title="Edit" onclick="handleEdit('${item.docId}')">edit</span>
+                <span class="material-icons text-danger action-btn" title="Delete" onclick="handleDelete('${item.docId}')">delete</span>
             `;
         }
 
@@ -178,7 +188,7 @@ function openModal(id = null) {
 
     // Pre-fill if Edit
     if (isEdit) {
-        const item = allData[currentCollection].find(i => i.id == id);
+        const item = allData[currentCollection].find(i => i.docId == id);
         if (item) {
             $("#itemName").val(item.name);
             if (item.categoryId) $("#field_categoryId").val(item.categoryId);
@@ -219,12 +229,8 @@ async function saveData() {
 
     try {
         if (id) {
-            await updateMasterData(currentCollection, parseInt(id), data); // Use doc ID logic? Wait, generic uses string doc ID usually but my generic add uses numeric ID. 
-            // My generic updateMasterData takes (collection, docId(string), data).
-            // But my `getAllMasterData` returns `id` as the numeric ID inside the data, AND `id` as the docId?
-            // Wait, firestore `doc.id` is the string key. `doc.data().id` is the numeric ID.
-            // My renderTable uses `item.id` which is `doc.id` (string) because of `snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }))`.
-            // So `id` here is the Firestore Doc ID. Good.
+            await updateMasterData(currentCollection, id, data);
+            // id is string docId now, so passing directly.
             toastr.success("Updated successfully.");
         } else {
             await addMasterData(currentCollection, data);

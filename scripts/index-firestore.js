@@ -670,6 +670,7 @@ function renderPendingTransactions() {
                 <thead class="table-light">
                     <tr>
                         <th style="font-size: 0.8rem;">Date</th>
+                        <th style="font-size: 0.8rem;">Account</th>
                         <th style="font-size: 0.8rem;">Amount</th>
                         <th style="font-size: 0.8rem;">Trans. Details</th>
                         <th style="font-size: 0.8rem;">Mapped Desc.</th>
@@ -694,9 +695,30 @@ function renderPendingTransactions() {
             if (cat) categoryName = cat.Text;
         }
 
+        let accountStyle = "";
+        let isAccountMatched = false;
+        const excelAccount = tx.accountName || "";
+
+        // Check for account match
+        if (excelAccount && Global_Response && Global_Response.PaymentSubType) {
+            const matchedAcc = Global_Response.PaymentSubType.find(acc =>
+                excelAccount.toLowerCase().trim() === acc.Text.toLowerCase().trim() ||
+                excelAccount.toLowerCase().includes(acc.Text.toLowerCase()) ||
+                acc.Text.toLowerCase().includes(excelAccount.toLowerCase())
+            );
+            if (matchedAcc) {
+                isAccountMatched = true;
+                accountStyle = "color: #198754; font-weight: bold;"; // Bootstrap success color
+            }
+        }
+
         const tr = $(`
             <tr class="${isMapped ? 'table-success' : ''}" style="${isMapped ? '--bs-table-bg: #d1e7dd;' : ''}">
                 <td style="font-size: 0.8rem;">${tx.date}</td>
+                <td style="font-size: 0.8rem; ${accountStyle}" title="${excelAccount}">
+                    ${excelAccount}
+                    ${isAccountMatched ? '<span class="material-icons align-middle text-success ms-1" style="font-size: 14px;">check_circle</span>' : ''}
+                </td>
                 <td style="font-size: 0.8rem;" class="${tx.type === 'Income' ? 'text-success' : 'text-danger'} fw-bold">
                     ${tx.type === 'Income' ? '+' : '-'} ${tx.amount}
                 </td>

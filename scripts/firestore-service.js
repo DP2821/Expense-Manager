@@ -160,7 +160,7 @@ export async function getAllMasterData(collectionName) {
       // Note: You might want to order by createdAt or name depending on UI
     );
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    return snapshot.docs.map(doc => ({ docId: doc.id, ...doc.data() }));
   } catch (error) {
     console.error(`Error getting all data for ${collectionName}:`, error);
     throw error;
