@@ -528,9 +528,7 @@ async function handleExcelUpload(file) {
     try {
         const transactions = await parsePaytmExcel(file);
 
-        // Process transactions to find mappings using prioritization logic:
-        // 1. Remarks -> getAutoFillData
-        // 2. Transaction Details -> getAutoFillData
+        // Process transactions to find mappings and match accounts
         pendingTransactions = await Promise.all(transactions.map(async (tx) => {
             let mappedData = null;
             let finalDesc = tx.description; // Default
@@ -553,6 +551,23 @@ async function handleExcelUpload(file) {
                 }
             }
 
+            // Match Account (Payment SubType)
+            let matchedAccountId = null;
+            let matchedPaymentTypeId = null;
+            const excelAccount = tx.accountName || "";
+
+            if (excelAccount && Global_Response && Global_Response.PaymentSubType) {
+                const matchedAcc = Global_Response.PaymentSubType.find(acc =>
+                    excelAccount.toLowerCase().trim() === acc.Text.toLowerCase().trim() ||
+                    excelAccount.toLowerCase().includes(acc.Text.toLowerCase()) ||
+                    acc.Text.toLowerCase().includes(excelAccount.toLowerCase())
+                );
+                if (matchedAcc) {
+                    matchedAccountId = matchedAcc.Value;
+                    matchedPaymentTypeId = matchedAcc.PaymentType;
+                }
+            }
+
             // If we found a match, populate mapped fields
             if (mappedData) {
                 return {
@@ -566,11 +581,18 @@ async function handleExcelUpload(file) {
                     isMapped: true,
                     // We update the description to be the one that matched (Remarks or TxDetails) 
                     // so the user sees what was used.
-                    description: finalDesc
+                    description: finalDesc,
+                    matchedAccountId: matchedAccountId,
+                    matchedPaymentTypeId: matchedPaymentTypeId
                 };
             }
 
-            return { ...tx, isMapped: false };
+            return {
+                ...tx,
+                isMapped: false,
+                matchedAccountId: matchedAccountId,
+                matchedPaymentTypeId: matchedPaymentTypeId
+            };
         }));
 
         if (pendingTransactions.length > 0) {
@@ -625,8 +647,13 @@ async function handleAcceptTransaction(index) {
             updateBalance: 'true'
         };
 
-        // Try to refine Payment Info
-        if (tx.paymentMethod && Global_Response && Global_Response.PaymentSubType) {
+        // Try to refine Payment Info using matched data first
+        if (tx.matchedAccountId && tx.matchedPaymentTypeId) {
+            expenseData.paymentType = tx.matchedPaymentTypeId;
+            expenseData.subPaymentTypeId = tx.matchedAccountId;
+        }
+        // Fallback: Try to match again (e.g. for PDF uploads if we haven't implemented matching there yet)
+        else if (tx.paymentMethod && Global_Response && Global_Response.PaymentSubType) {
             const paymentMethod = tx.paymentMethod.toLowerCase();
             const match = Global_Response.PaymentSubType.find(st => st.Text.toLowerCase().includes(paymentMethod));
             if (match) {
@@ -699,17 +726,10 @@ function renderPendingTransactions() {
         let isAccountMatched = false;
         const excelAccount = tx.accountName || "";
 
-        // Check for account match
-        if (excelAccount && Global_Response && Global_Response.PaymentSubType) {
-            const matchedAcc = Global_Response.PaymentSubType.find(acc =>
-                excelAccount.toLowerCase().trim() === acc.Text.toLowerCase().trim() ||
-                excelAccount.toLowerCase().includes(acc.Text.toLowerCase()) ||
-                acc.Text.toLowerCase().includes(excelAccount.toLowerCase())
-            );
-            if (matchedAcc) {
-                isAccountMatched = true;
-                accountStyle = "color: #198754; font-weight: bold;"; // Bootstrap success color
-            }
+        // Check for account match using stored values
+        if (tx.matchedAccountId) {
+            isAccountMatched = true;
+            accountStyle = "color: #198754; font-weight: bold;"; // Bootstrap success color
         }
 
         const tr = $(`
@@ -812,7 +832,17 @@ async function fillExpenseFormFromTransaction(index) {
         }
 
         // Then override Payment Type/Sub Type if we have specific info from PDF
-        if (tx.paymentMethod) {
+        // Then override Payment Type/Sub Type if we have matched info
+        if (tx.matchedAccountId && tx.matchedPaymentTypeId) {
+            $("#PaymentType").val(tx.matchedPaymentTypeId);
+            FillPaymnetSubType(tx.matchedPaymentTypeId);
+            $("#PaymentSubType").val(tx.matchedAccountId);
+
+            if (typeof toastr !== 'undefined') {
+                toastr.success(`Auto-selected account from Excel match!`);
+            }
+        }
+        else if (tx.paymentMethod) {
             const paymentMethod = tx.paymentMethod.toLowerCase();
             let match = null;
 

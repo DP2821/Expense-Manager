@@ -1,8 +1,8 @@
 // Firestore-based Dashboard Script
-import { 
-    getExpenses, 
-    getIncome, 
-    getBorrowLent, 
+import {
+    getExpenses,
+    getIncome,
+    getBorrowLent,
     getBalance,
     getAllDropdownData,
     updateExpense,
@@ -21,10 +21,10 @@ let income = [];
 let borrowLent = [];
 let dropdownData = {}; // Store categories, payment types, etc.
 
-$(document).ready(function() {
+$(document).ready(function () {
     showLoader();
     initializeDashboard();
-    
+
     // Additional dropdown initialization after page load
     setTimeout(() => {
         initializeDropdown();
@@ -35,27 +35,27 @@ async function initializeDashboard() {
     try {
         // Load user profile
         loadUserProfile();
-        
+
         // Load all data
         await loadAllData();
-        
+
         // Set up date filters AFTER data is loaded
         setupDateFilters();
-        
+
         // Apply current month filter by default
         await applyDateFilter();
-        
+
         // Initialize charts
         initializeCharts();
-        
+
         // Update summary cards
         updateSummaryCards();
-        
+
         // Update tables
         updateTransactionsTable();
         updateBorrowLentTable();
         updateSpendingInsights();
-        
+
         hideLoader();
     } catch (error) {
         console.error('Error initializing dashboard:', error);
@@ -75,15 +75,15 @@ async function loadAllData() {
             getBorrowLent(),
             getAllDropdownData()
         ]);
-        
-        console.log('Data loaded successfully:', { 
-            expenses: expenses.length, 
-            income: income.length, 
+
+        console.log('Data loaded successfully:', {
+            expenses: expenses.length,
+            income: income.length,
             borrowLent: borrowLent.length,
             categories: dropdownData.Category?.length || 0,
             incomeCategories: dropdownData.IncomeCategory?.length || 0
         });
-        
+
     } catch (error) {
         console.error('Error loading data:', error);
         throw error;
@@ -95,19 +95,19 @@ function setupDateFilters() {
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 2);
     const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-    
+
     document.getElementById('startDate').value = formatDateForInput(startOfMonth);
     document.getElementById('endDate').value = formatDateForInput(endOfMonth);
-    
+
     // Apply filter button
-    document.getElementById('applyFilter').addEventListener('click', async function() {
+    document.getElementById('applyFilter').addEventListener('click', async function () {
         showLoader();
         await applyDateFilter();
         hideLoader();
     });
-    
+
     // Reset filter button
-    document.getElementById('resetFilter').addEventListener('click', async function() {
+    document.getElementById('resetFilter').addEventListener('click', async function () {
         showLoader();
         document.getElementById('startDate').value = formatDateForInput(startOfMonth);
         document.getElementById('endDate').value = formatDateForInput(endOfMonth);
@@ -116,7 +116,7 @@ function setupDateFilters() {
     });
 
     // Quick filter buttons
-    document.getElementById('quickFilterCurrentMonth').addEventListener('click', async function() {
+    document.getElementById('quickFilterCurrentMonth').addEventListener('click', async function () {
         const now = new Date();
         const start = new Date(now.getFullYear(), now.getMonth(), 2);
         const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
@@ -126,7 +126,7 @@ function setupDateFilters() {
         await applyDateFilter();
         hideLoader();
     });
-    document.getElementById('quickFilterPreviousMonth').addEventListener('click', async function() {
+    document.getElementById('quickFilterPreviousMonth').addEventListener('click', async function () {
         const now = new Date();
         const start = new Date(now.getFullYear(), now.getMonth() - 1, 2);
         const end = new Date(now.getFullYear(), now.getMonth(), 0);
@@ -136,7 +136,7 @@ function setupDateFilters() {
         await applyDateFilter();
         hideLoader();
     });
-    document.getElementById('quickFilterCurrentYear').addEventListener('click', async function() {
+    document.getElementById('quickFilterCurrentYear').addEventListener('click', async function () {
         const now = new Date();
         const start = new Date(now.getFullYear(), 0, 1);
         const end = new Date(now.getFullYear(), 11, 31);
@@ -149,7 +149,7 @@ function setupDateFilters() {
 
     // Search functionality
     let searchTimeout;
-    document.getElementById('transactionSearch').addEventListener('input', function() {
+    document.getElementById('transactionSearch').addEventListener('input', function () {
         clearTimeout(searchTimeout);
         searchTimeout = setTimeout(async () => {
             await applySearchFilter();
@@ -157,7 +157,7 @@ function setupDateFilters() {
     });
 
     // Clear search button
-    document.getElementById('clearSearch').addEventListener('click', async function() {
+    document.getElementById('clearSearch').addEventListener('click', async function () {
         document.getElementById('transactionSearch').value = '';
         await applySearchFilter();
     });
@@ -169,20 +169,20 @@ function setupDateFilters() {
 async function applyDateFilter() {
     const startDate = document.getElementById('startDate').value;
     const endDate = document.getElementById('endDate').value;
-    
+
     try {
         // Reload data with date filter
         [expenses, income] = await Promise.all([
             getExpenses(startDate, endDate),
             getIncome(startDate, endDate)
         ]);
-        
+
         // Update all components
         updateSummaryCards();
         updateTransactionsTable();
         initializeCharts();
         updateSpendingInsights();
-        
+
         if (typeof toastr !== 'undefined') {
             toastr.success('Filter applied successfully!');
         }
@@ -198,7 +198,7 @@ async function applySearchFilter() {
     const searchTerm = document.getElementById('transactionSearch').value.trim();
     const startDate = document.getElementById('startDate').value;
     const endDate = document.getElementById('endDate').value;
-    
+
     try {
         if (searchTerm === '') {
             // If no search term, use date filter
@@ -212,12 +212,12 @@ async function applySearchFilter() {
             expenses = searchResults.expenses;
             income = searchResults.income;
         }
-        
+
         // Update components
         updateSummaryCards();
         updateTransactionsTable();
         updateSpendingInsights();
-        
+
     } catch (error) {
         console.error('Error applying search filter:', error);
         if (typeof toastr !== 'undefined') {
@@ -231,7 +231,7 @@ async function updateSummaryCards() {
         // Calculate totals
         const totalExpenses = expenses.reduce((sum, expense) => sum + expense.amount, 0);
         const totalIncome = income.reduce((sum, inc) => sum + inc.amount, 0);
-        
+
         // Get current bank balance from balance data
         const balanceData = await getBalance();
         const totalBankBalance = balanceData.reduce((sum, balance) => {
@@ -240,14 +240,14 @@ async function updateSummaryCards() {
             const isCreditCard = account && account.PaymentType === 3;
             return isCreditCard ? sum : sum + parseFloat(balance.balance || 0);
         }, 0);
-        
+
         // Calculate Credit Limit Used (sum of balances for credit card accounts)
         const totalCreditUsed = balanceData.reduce((sum, balance) => {
             const account = dropdownData.PaymentSubType?.find(a => a.Value === balance.accountId);
             const isCreditCard = account && account.PaymentType === 3;
             return isCreditCard ? sum + parseFloat(balance.balance || 0) : sum;
         }, 0);
-        
+
         // Calculate borrow/lent balance
         const openBorrowLent = borrowLent.filter(item => item.status === 'Open');
         const borrowTotal = openBorrowLent
@@ -257,10 +257,10 @@ async function updateSummaryCards() {
             .filter(item => item.type === 'Lent')
             .reduce((sum, item) => sum + item.amount, 0);
         const borrowLentBalance = lentTotal - borrowTotal;
-        
+
         // Calculate Net Balance
         const netBalance = totalBankBalance + borrowLentBalance - totalCreditUsed;
-        
+
         // Update cards
         document.getElementById('current-balance').textContent = `₹ ${totalBankBalance.toFixed(2)}`;
         document.getElementById('filtered-expense').textContent = `₹ ${totalExpenses.toFixed(2)}`;
@@ -275,7 +275,7 @@ async function updateSummaryCards() {
         const totalExpenses = expenses.reduce((sum, expense) => sum + expense.amount, 0);
         const totalIncome = income.reduce((sum, inc) => sum + inc.amount, 0);
         const currentBalance = totalIncome - totalExpenses;
-        
+
         document.getElementById('current-balance').textContent = `₹ ${currentBalance.toFixed(2)}`;
         document.getElementById('filtered-expense').textContent = `₹ ${totalExpenses.toFixed(2)}`;
         document.getElementById('filtered-income').textContent = `₹ ${totalIncome.toFixed(2)}`;
@@ -286,7 +286,7 @@ async function updateSummaryCards() {
 
 function updateTransactionsTable() {
     const tableBody = document.getElementById('transactions-table');
-    
+
     // Combine and sort transactions
     const transactions = [
         ...expenses.map(expense => ({
@@ -304,13 +304,13 @@ function updateTransactionsTable() {
             amount: inc.amount
         }))
     ].sort((a, b) => new Date(b.date) - new Date(a.date))
-     .slice(0, 10); // Show only last 10 transactions
-    
+        .slice(0, 10); // Show only last 10 transactions
+
     if (transactions.length === 0) {
         tableBody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">No transactions found</td></tr>';
         return;
     }
-    
+
     tableBody.innerHTML = transactions.map(transaction => `
         <tr>
             <td>${formatDate(transaction.date)}</td>
@@ -344,12 +344,12 @@ function updateTransactionsTable() {
 
 function updateBorrowLentTable() {
     const tableBody = document.getElementById('borrow-lent-table');
-    
+
     if (borrowLent.length === 0) {
         tableBody.innerHTML = '<tr><td colspan="10" class="text-center text-muted">No borrow/lent records found</td></tr>';
         return;
     }
-    
+
     tableBody.innerHTML = borrowLent.map(item => `
         <tr>
             <td>${formatDate(item.date)}</td>
@@ -394,20 +394,20 @@ function updateSpendingInsights() {
         const categoryName = getCategoryName(expense.categoryId);
         categorySpending[categoryName] = (categorySpending[categoryName] || 0) + expense.amount;
     });
-    
+
     const topCategories = Object.entries(categorySpending)
-        .sort(([,a], [,b]) => b - a)
-        // .slice(0, 3);
-    
+        .sort(([, a], [, b]) => b - a)
+    // .slice(0, 3);
+
     const topCategoriesHtml = topCategories.map(([category, amount]) => `
         <div class="d-flex justify-content-between align-items-center mb-2">
             <span>${category}</span>
             <span class="text-danger">₹ ${amount.toFixed(2)}</span>
         </div>
     `).join('');
-    
+
     document.getElementById('top-categories').innerHTML = topCategoriesHtml;
-    
+
     // Average daily spending
     if (expenses.length > 0) {
         const totalSpending = expenses.reduce((sum, expense) => sum + expense.amount, 0);
@@ -415,16 +415,16 @@ function updateSpendingInsights() {
         const avgDaily = daysDiff > 0 ? totalSpending / daysDiff : totalSpending;
         document.getElementById('avg-daily-spending').textContent = `₹ ${avgDaily.toFixed(2)}`;
     }
-    
+
     // Largest transaction
     // const allTransactions = [...expenses, ...income];
     if (expenses.length > 0) {
-        const largest = expenses.reduce((max, transaction) => 
+        const largest = expenses.reduce((max, transaction) =>
             transaction.amount > max.amount ? transaction : max
         );
         document.getElementById('largest-transaction').textContent = `₹ ${largest.amount.toFixed(2)}`;
     }
-    
+
     // Transaction count
     document.getElementById('transaction-count').textContent = expenses.length;
 }
@@ -432,7 +432,7 @@ function updateSpendingInsights() {
 function initializeCharts() {
     // Category Chart
     createCategoryChart();
-    
+
     // Monthly Trend Chart
     createMonthlyTrendChart();
 }
@@ -440,25 +440,25 @@ function initializeCharts() {
 function createCategoryChart() {
     const ctx = document.getElementById('categoryChart');
     if (!ctx) return;
-    
+
     // Destroy existing chart
     if (window.categoryChart && typeof window.categoryChart.destroy === 'function') {
         window.categoryChart.destroy();
     }
-    
+
     // Prepare data
     const categoryData = {};
     expenses.forEach(expense => {
         const categoryName = getCategoryName(expense.categoryId);
         categoryData[categoryName] = (categoryData[categoryName] || 0) + expense.amount;
     });
-    
+
     const labels = Object.keys(categoryData);
     const data = Object.values(categoryData);
-    
+
     // Hide loading
     document.getElementById('categoryChartLoading').style.display = 'none';
-    
+
     window.categoryChart = new Chart(ctx, {
         type: 'pie',
         data: {
@@ -486,25 +486,25 @@ function createCategoryChart() {
 function createMonthlyTrendChart() {
     const ctx = document.getElementById('monthlyTrendChart');
     if (!ctx) return;
-    
+
     // Destroy existing chart
     if (window.monthlyTrendChart && typeof window.monthlyTrendChart.destroy === 'function') {
         window.monthlyTrendChart.destroy();
     }
-    
+
     // Prepare monthly data
     const monthlyData = {};
     expenses.forEach(expense => {
         const month = expense.paymentDate.substring(0, 7); // YYYY-MM
         monthlyData[month] = (monthlyData[month] || 0) + expense.amount;
     });
-    
+
     const labels = Object.keys(monthlyData).sort();
     const data = labels.map(month => monthlyData[month]);
-    
+
     // Hide loading
     document.getElementById('monthlyTrendChartLoading').style.display = 'none';
-    
+
     window.monthlyTrendChart = new Chart(ctx, {
         type: 'line',
         data: {
@@ -563,11 +563,11 @@ function formatMonth(monthString) {
 
 function getDaysDifference(transactions) {
     if (transactions.length === 0) return 0;
-    
+
     const dates = transactions.map(t => new Date(t.paymentDate || t.date));
     const minDate = new Date(Math.min(...dates));
     const maxDate = new Date(Math.max(...dates));
-    
+
     return Math.ceil((maxDate - minDate) / (1000 * 60 * 60 * 24)) + 1;
 }
 
@@ -577,7 +577,7 @@ function loadUserProfile() {
     if (existingUserInfo) {
         existingUserInfo.remove();
     }
-    
+
     // Wait for auth to be ready
     const unsubscribe = auth.onAuthStateChanged((user) => {
         if (user) {
@@ -587,13 +587,13 @@ function loadUserProfile() {
             document.getElementById('userName').textContent = 'Guest';
             document.getElementById('userEmail').textContent = 'Not signed in';
         }
-        
+
         // Initialize dropdown after user info is set
         initializeDropdown();
     });
-    
+
     // Set up logout functionality
-    document.getElementById('logoutBtn').addEventListener('click', function(e) {
+    document.getElementById('logoutBtn').addEventListener('click', function (e) {
         e.preventDefault();
         auth.signOut().then(() => {
             window.location.href = 'login.html';
@@ -616,12 +616,12 @@ function initializeDropdown() {
             if (existingDropdown) {
                 existingDropdown.dispose();
             }
-            
+
             // Create new dropdown
             new bootstrap.Dropdown(dropdownToggle);
-            
+
             // Add click handler as backup
-            dropdownToggle.addEventListener('click', function(e) {
+            dropdownToggle.addEventListener('click', function (e) {
                 e.preventDefault();
                 const dropdownMenu = this.nextElementSibling;
                 if (dropdownMenu && dropdownMenu.classList.contains('dropdown-menu')) {
@@ -643,39 +643,39 @@ function hideLoader() {
 // Modal event handlers
 function setupModalEventHandlers() {
     // Save transaction button
-    document.getElementById('saveTransactionBtn').addEventListener('click', async function() {
+    document.getElementById('saveTransactionBtn').addEventListener('click', async function () {
         await saveTransaction();
     });
 
     // Confirm delete button
-    document.getElementById('confirmDeleteBtn').addEventListener('click', async function() {
+    document.getElementById('confirmDeleteBtn').addEventListener('click', async function () {
         await confirmDeleteTransaction();
     });
 
     // Modal event listeners for dropdown population
-    document.getElementById('editPaymentType').addEventListener('change', function() {
+    document.getElementById('editPaymentType').addEventListener('change', function () {
         populateSubPaymentTypes();
     });
 
-    document.getElementById('editCategory').addEventListener('change', function() {
+    document.getElementById('editCategory').addEventListener('change', function () {
         populateSubCategories();
     });
 }
 
 // Global functions for edit/delete (accessible from onclick)
-window.editTransaction = function(transactionId, transactionType) {
+window.editTransaction = function (transactionId, transactionType) {
     openEditModal(transactionId, transactionType);
 };
 
-window.deleteTransaction = function(transactionId, transactionType) {
+window.deleteTransaction = function (transactionId, transactionType) {
     openDeleteModal(transactionId, transactionType);
 };
 
-window.editBorrowLent = function(borrowLentId) {
+window.editBorrowLent = function (borrowLentId) {
     openEditBorrowLentModal(borrowLentId);
 };
 
-window.deleteBorrowLent = function(borrowLentId) {
+window.deleteBorrowLent = function (borrowLentId) {
     openDeleteBorrowLentModal(borrowLentId);
 };
 
@@ -704,28 +704,32 @@ async function openEditModal(transactionId, transactionType) {
             document.getElementById('editDate').value = transaction.paymentDate;
             document.getElementById('expenseFields').style.display = 'block';
             document.getElementById('incomeFields').style.display = 'none';
-            
-            // Populate dropdowns
+
+            // 1. Populate Parent Dropdowns
             populateCategories();
             populatePaymentTypes();
-            populateSubCategories();
-            populateSubPaymentTypes();
-            
-            // Set selected values
+
+            // 2. Set Parent Values
             document.getElementById('editCategory').value = transaction.categoryId;
             document.getElementById('editPaymentType').value = transaction.paymentTypeId;
+
+            // 3. Populate Child Dropdowns (now that parents are set)
+            populateSubCategories();
+            populateSubPaymentTypes();
+
+            // 4. Set Child Values
             document.getElementById('editSubCategory').value = transaction.subCategoryId || '';
             document.getElementById('editSubPaymentType').value = transaction.paymentSubTypeId;
-            
+
         } else {
             document.getElementById('editDate').value = transaction.date;
             document.getElementById('expenseFields').style.display = 'none';
             document.getElementById('incomeFields').style.display = 'block';
-            
+
             // Populate income dropdowns
             populateIncomeSources();
             populateIncomeAccounts();
-            
+
             // Set selected values
             document.getElementById('editIncomeSource').value = transaction.incomeSourceId;
             document.getElementById('editIncomeAccount').value = transaction.accountId || '';
@@ -756,7 +760,7 @@ function openDeleteModal(transactionId, transactionType) {
     }
 
     // Set transaction details for confirmation
-    document.getElementById('deleteTransactionDetails').textContent = 
+    document.getElementById('deleteTransactionDetails').textContent =
         `${transactionType}: ${transaction.description} - ₹ ${Math.abs(transaction.amount).toFixed(2)}`;
 
     // Store transaction info for deletion
@@ -806,7 +810,7 @@ async function saveTransaction() {
         // Close modal and refresh data
         const modal = bootstrap.Modal.getInstance(document.getElementById('editTransactionModal'));
         modal.hide();
-        
+
         await loadAllData();
         updateTransactionsTable();
         updateSummaryCards();
@@ -835,7 +839,7 @@ async function confirmDeleteTransaction() {
         // Close modal and refresh data
         const modal = bootstrap.Modal.getInstance(document.getElementById('deleteTransactionModal'));
         modal.hide();
-        
+
         await loadAllData();
         updateTransactionsTable();
         updateSummaryCards();
@@ -867,7 +871,7 @@ function populatePaymentTypes() {
 function populateSubCategories() {
     const select = document.getElementById('editSubCategory');
     const categoryId = document.getElementById('editCategory').value;
-    
+
     select.innerHTML = '<option value="">Select Sub Category</option>';
     if (categoryId) {
         dropdownData.SubCategory?.forEach(subCategory => {
@@ -881,7 +885,7 @@ function populateSubCategories() {
 function populateSubPaymentTypes() {
     const select = document.getElementById('editSubPaymentType');
     const categoryId = document.getElementById('editPaymentType').value;
-    
+
     select.innerHTML = '<option value="">Select Account</option>';
     if (categoryId) {
         dropdownData.PaymentSubType?.forEach(subType => {
@@ -964,7 +968,7 @@ async function openEditBorrowLentModal(borrowLentId) {
 }
 
 // Save Borrow/Lent changes
-$(document).on('click', '#saveBorrowLentBtn', async function() {
+$(document).on('click', '#saveBorrowLentBtn', async function () {
     try {
         const borrowLentId = document.getElementById('editBorrowLentId').value;
         const type = document.getElementById('editBorrowLentType').value;
