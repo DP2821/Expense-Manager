@@ -21,6 +21,16 @@ let income = [];
 let borrowLent = [];
 let dropdownData = {}; // Store categories, payment types, etc.
 
+// Pagination State
+let currentPage = 1;
+const itemsPerPage = 10;
+let filteredTransactions = []; // Store currently filtered transactions for pagination
+
+// Trend Filter State
+let selectedTrendCategories = new Set(); // Stores category Ids
+let allTrendCategories = []; // Stores all available category Ids for initial state
+
+
 $(document).ready(function () {
     showLoader();
     initializeDashboard();
@@ -41,6 +51,10 @@ async function initializeDashboard() {
 
         // Set up date filters AFTER data is loaded
         setupDateFilters();
+
+        // Initialize Trend Filter
+        initializeTrendCategoryFilter();
+
 
         // Apply current month filter by default
         await applyDateFilter();
@@ -303,15 +317,34 @@ function updateTransactionsTable() {
             category: getIncomeCategoryName(inc.incomeSourceId),
             amount: inc.amount
         }))
-    ].sort((a, b) => new Date(b.date) - new Date(a.date))
-        .slice(0, 10); // Show only last 10 transactions
+    ].sort((a, b) => new Date(b.date) - new Date(a.date));
 
-    if (transactions.length === 0) {
-        tableBody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">No transactions found</td></tr>';
+    // Update filtered transactions for pagination
+    filteredTransactions = transactions;
+
+    renderTransactionsPage();
+}
+
+function renderTransactionsPage() {
+    const tableBody = document.getElementById('transactions-table');
+    const totalItems = filteredTransactions.length;
+    const totalPages = Math.ceil(totalItems / itemsPerPage);
+
+    // Ensure currentPage is valid
+    if (currentPage < 1) currentPage = 1;
+    if (currentPage > totalPages && totalPages > 0) currentPage = totalPages;
+
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = Math.min(startIndex + itemsPerPage, totalItems);
+    const currentTransactions = filteredTransactions.slice(startIndex, endIndex);
+
+    if (totalItems === 0) {
+        tableBody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No transactions found</td></tr>';
+        renderPaginationControls(0, 0, 0);
         return;
     }
 
-    tableBody.innerHTML = transactions.map(transaction => `
+    tableBody.innerHTML = currentTransactions.map(transaction => `
         <tr>
             <td>${formatDate(transaction.date)}</td>
             <td>
@@ -340,6 +373,47 @@ function updateTransactionsTable() {
             </td>
         </tr>
     `).join('');
+
+    renderPaginationControls(startIndex + 1, endIndex, totalItems);
+}
+
+function renderPaginationControls(start, end, total) {
+    const paginationInfo = document.getElementById('transactionPaginationInfo');
+    const prevBtn = document.getElementById('prevTransactionPage');
+    const nextBtn = document.getElementById('nextTransactionPage');
+    const totalPages = Math.ceil(total / itemsPerPage);
+
+    paginationInfo.textContent = `Showing ${start}-${end} of ${total}`;
+
+    // Update Previous Button
+    if (currentPage <= 1 || total === 0) {
+        prevBtn.classList.add('disabled');
+        prevBtn.querySelector('a').setAttribute('aria-disabled', 'true');
+        prevBtn.onclick = null;
+    } else {
+        prevBtn.classList.remove('disabled');
+        prevBtn.querySelector('a').removeAttribute('aria-disabled');
+        prevBtn.onclick = (e) => {
+            e.preventDefault();
+            currentPage--;
+            renderTransactionsPage();
+        };
+    }
+
+    // Update Next Button
+    if (currentPage >= totalPages || total === 0) {
+        nextBtn.classList.add('disabled');
+        nextBtn.querySelector('a').setAttribute('aria-disabled', 'true');
+        nextBtn.onclick = null;
+    } else {
+        nextBtn.classList.remove('disabled');
+        nextBtn.querySelector('a').removeAttribute('aria-disabled');
+        nextBtn.onclick = (e) => {
+            e.preventDefault();
+            currentPage++;
+            renderTransactionsPage();
+        };
+    }
 }
 
 function updateBorrowLentTable() {
@@ -437,6 +511,52 @@ function initializeCharts() {
     createMonthlyTrendChart();
 }
 
+
+function initializeTrendCategoryFilter() {
+    if (!dropdownData.Category) return;
+
+    const categoryList = document.getElementById('trendCategoryList');
+    categoryList.innerHTML = '';
+
+    allTrendCategories = dropdownData.Category.map(cat => String(cat.Value));
+    // Initially select all (store as strings)
+    if (selectedTrendCategories.size === 0) {
+        allTrendCategories.forEach(id => selectedTrendCategories.add(id));
+    }
+
+    dropdownData.Category.forEach(category => {
+        const col = document.createElement('div');
+        col.className = 'col-md-6';
+        col.innerHTML = `
+            <div class="form-check">
+            <div class="form-check">
+                <input class="form-check-input trend-category-checkbox" type="checkbox" value="${category.Value}" id="trendCat_${category.Value}" ${selectedTrendCategories.has(String(category.Value)) ? 'checked' : ''}>
+                <label class="form-check-label" for="trendCat_${category.Value}">
+                <label class="form-check-label" for="trendCat_${category.Value}">
+                    ${category.Text}
+                </label>
+            </div>
+        `;
+        categoryList.appendChild(col);
+    });
+
+    // Add change listeners to checkboxes
+    document.querySelectorAll('.trend-category-checkbox').forEach(cb => {
+        cb.addEventListener('change', () => {
+            saveTrendFilterSelection();
+        });
+    });
+}
+
+function saveTrendFilterSelection() {
+    selectedTrendCategories.clear();
+    document.querySelectorAll('.trend-category-checkbox:checked').forEach(cb => {
+        selectedTrendCategories.add(cb.value);
+    });
+    // Update chart
+    createMonthlyTrendChart();
+}
+
 function createCategoryChart() {
     const ctx = document.getElementById('categoryChart');
     if (!ctx) return;
@@ -495,8 +615,12 @@ function createMonthlyTrendChart() {
     // Prepare monthly data
     const monthlyData = {};
     expenses.forEach(expense => {
-        const month = expense.paymentDate.substring(0, 7); // YYYY-MM
-        monthlyData[month] = (monthlyData[month] || 0) + expense.amount;
+        // Apply Category Filter
+        // Ensure comparison is done as strings (checkbox values are strings)
+        if (selectedTrendCategories.has(String(expense.categoryId))) {
+            const month = expense.paymentDate.substring(0, 7); // YYYY-MM
+            monthlyData[month] = (monthlyData[month] || 0) + expense.amount;
+        }
     });
 
     const labels = Object.keys(monthlyData).sort();
@@ -660,7 +784,28 @@ function setupModalEventHandlers() {
     document.getElementById('editCategory').addEventListener('change', function () {
         populateSubCategories();
     });
+
+    // Trend Filter Modal Event Handlers
+    document.getElementById('trendFilterBtn').addEventListener('click', () => {
+        const modalEl = document.getElementById('trendFilterModal');
+        let modal = bootstrap.Modal.getInstance(modalEl);
+        if (!modal) {
+            modal = new bootstrap.Modal(modalEl);
+        }
+        modal.show();
+    });
+
+    document.getElementById('selectAllTrendCategories').addEventListener('click', () => {
+        document.querySelectorAll('.trend-category-checkbox').forEach(cb => cb.checked = true);
+        saveTrendFilterSelection();
+    });
+
+    document.getElementById('deselectAllTrendCategories').addEventListener('click', () => {
+        document.querySelectorAll('.trend-category-checkbox').forEach(cb => cb.checked = false);
+        saveTrendFilterSelection();
+    });
 }
+
 
 // Global functions for edit/delete (accessible from onclick)
 window.editTransaction = function (transactionId, transactionType) {

@@ -226,8 +226,13 @@
             </div>
             <div class="col-lg-6">
                 <div class="card shadow-sm h-100">
-                    <div class="card-header bg-success text-white">
-                        <span class="material-icons align-middle">trending_up</span> Monthly Expense Trend
+                    <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                        <div>
+                            <span class="material-icons align-middle">trending_up</span> Monthly Expense Trend
+                        </div>
+                        <button class="btn btn-sm btn-light text-success" id="trendFilterBtn" title="Filter Categories">
+                            <span class="material-icons align-middle fs-6">filter_list</span>
+                        </button>
                     </div>
                     <div class="card-body">
                         <div class="chart-container">
@@ -281,6 +286,20 @@
                                 </tbody>
                             </table>
                         </div>
+                    </div>
+                    <!-- Pagination Footer -->
+                    <div class="card-footer bg-white d-flex justify-content-between align-items-center">
+                        <small class="text-muted" id="transactionPaginationInfo">Showing 0-0 of 0</small>
+                        <nav aria-label="Transaction pagination">
+                            <ul class="pagination pagination-sm mb-0">
+                                <li class="page-item disabled" id="prevTransactionPage">
+                                    <a class="page-link" href="#" tabindex="-1" aria-disabled="true">Previous</a>
+                                </li>
+                                <li class="page-item" id="nextTransactionPage">
+                                    <a class="page-link" href="#">Next</a>
+                                </li>
+                            </ul>
+                        </nav>
                     </div>
                 </div>
             </div>
@@ -537,6 +556,32 @@
         </div>
     </div>
     <!-- End Edit Borrow/Lent Modal -->
+
+    <!-- Trend Category Filter Modal -->
+    <div class="modal fade" id="trendFilterModal" tabindex="-1" aria-labelledby="trendFilterModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="trendFilterModalLabel">Filter Trend Categories</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="d-flex justify-content-between mb-3">
+                        <button class="btn btn-sm btn-outline-primary" id="selectAllTrendCategories">Select All</button>
+                        <button class="btn btn-sm btn-outline-secondary" id="deselectAllTrendCategories">Deselect
+                            All</button>
+                    </div>
+                    <div id="trendCategoryList" class="row g-2">
+                        <!-- Checkboxes will be populated dynamically -->
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Done</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Delete Confirmation Modal -->
     <div class="modal fade" id="deleteTransactionModal" tabindex="-1" aria-labelledby="deleteTransactionModalLabel"
